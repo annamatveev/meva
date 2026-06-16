@@ -16,8 +16,8 @@ import { DemoBanner } from "@/components/demo/DemoBanner";
 import { DEMO } from "@/lib/demo";
 
 export const metadata: Metadata = {
-  title: "meva — Context Studio",
-  description: "Govern the context that feeds your AI agents.",
+  title: "bravo — Brain Vault",
+  description: "Govern all the Markdown your AI agents read — context, skills, memory.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -39,9 +39,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/" className="flex shrink-0 items-center gap-2.5">
                 <Logo size={28} />
                 <span className="flex items-baseline gap-2">
-                  <span className="font-mono text-lg font-bold uppercase tracking-tight">meva</span>
+                  <span className="font-mono text-lg font-bold uppercase tracking-tight">bravo</span>
                   <span className="hidden whitespace-nowrap font-mono text-[11px] uppercase tracking-[0.15em] text-muted sm:inline">
-                    · Memory Vault
+                    · Brain Vault
                   </span>
                 </span>
               </Link>

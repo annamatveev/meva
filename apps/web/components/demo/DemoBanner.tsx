@@ -21,7 +21,7 @@ export function DemoBanner() {
   return (
     <div className="border-b border-line bg-accent/15 px-6 py-1.5 text-center text-xs text-ink">
       <span className="font-mono uppercase tracking-wide text-accent">Demo</span>{" "}
-      — sample data, signed in as a demo Owner. Changes aren’t saved; reload to reset.
+      — bravo with sample data, signed in as a demo Owner. Changes aren’t saved; reload to reset.
     </div>
   );
 }

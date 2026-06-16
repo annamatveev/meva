@@ -24,6 +24,12 @@ const config: Config = {
           ink: "var(--brand-ink)",
         },
         accent: "var(--accent)",
+        type: {
+          context: "var(--type-context)",
+          skills: "var(--type-skills)",
+          memory: "var(--type-memory)",
+          default: "var(--type-default)",
+        },
         // Semantic accents (work on both themes).
         added: { accent: "#1f9d57", inline: "var(--added-inline)" },
         removed: { accent: "#d2483b", inline: "var(--removed-inline)" },

@@ -2,28 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ---- Theme tokens (calm: soft paper · muted indigo · neutral slate) -----
-   The brand is deliberately NOT green, so it never competes with the semantic
-   "added" green in diffs. Components reference Tailwind tokens (bg-surface,
-   text-ink, border-line, brand, accent) so both modes stay consistent. */
+/* ---- bravo · Brain Vault theme tokens -----------------------------------
+   A livelier palette: a vivid indigo-violet brand, a warm accent, and a set of
+   per-type hues (context / skills / memory / custom) used to colour-code the
+   different kinds of Markdown a workspace holds. Semantic add/remove/modify
+   stay distinct. */
 
 :root {
-  --bg: #f6f6f3; /* soft warm-neutral paper */
+  --bg: #f7f7fb; /* soft cool paper */
   --surface: #ffffff;
-  --surface-2: #eceef1;
-  --line: rgba(28, 33, 46, 0.1);
-  --hover: rgba(28, 33, 46, 0.045);
-  --text: #242a36; /* neutral dark slate */
-  --text-muted: #69707e;
+  --surface-2: #eeeef5;
+  --line: rgba(40, 38, 64, 0.1);
+  --hover: rgba(40, 38, 64, 0.045);
+  --text: #232233;
+  --text-muted: #6b6a80;
 
-  --brand: #4c63b6; /* calm muted indigo — primary actions, links, marks */
-  --brand-2: #6a7fcb;
-  --brand-soft: rgba(76, 99, 182, 0.1);
-  --brand-ink: #2f3c73;
+  --brand: #5b54e8; /* vivid indigo-violet */
+  --brand-2: #7c73f5;
+  --brand-soft: rgba(91, 84, 232, 0.1);
+  --brand-ink: #3a31a6;
 
-  --accent: #6a7fcb; /* lighter indigo for § marks / subtle highlights */
-  --gutter: rgba(28, 33, 46, 0.32);
+  --accent: #e8893b; /* warm highlight (decorative only) */
 
+  /* type hues */
+  --type-context: #4f6bed; /* blue */
+  --type-skills: #9b5cf6; /* violet */
+  --type-memory: #12a8a0; /* teal */
+  --type-default: #7a8a9a; /* slate */
+
+  --gutter: rgba(40, 38, 64, 0.32);
   --added-inline: #c7e7d1;
   --removed-inline: #f1cfc9;
 
@@ -31,22 +38,27 @@
 }
 
 .dark {
-  --bg: #14161c; /* calm near-black slate (not green) */
-  --surface: #1c1f28;
-  --surface-2: #242834;
+  --bg: #131218;
+  --surface: #1b1a23;
+  --surface-2: #24222f;
   --line: rgba(255, 255, 255, 0.09);
   --hover: rgba(255, 255, 255, 0.05);
-  --text: #e6e8ee;
-  --text-muted: #9aa1b1;
+  --text: #e9e8f0;
+  --text-muted: #a0a0b5;
 
-  --brand: #8ea0e8;
-  --brand-2: #a9b6f0;
-  --brand-soft: rgba(142, 160, 232, 0.16);
-  --brand-ink: #c5cef5;
+  --brand: #8e87f5;
+  --brand-2: #a9a3ff;
+  --brand-soft: rgba(142, 135, 245, 0.16);
+  --brand-ink: #cfcbff;
 
-  --accent: #a9b6f0;
-  --gutter: rgba(230, 232, 238, 0.28);
+  --accent: #f0a560;
 
+  --type-context: #7e95f5;
+  --type-skills: #b98cff;
+  --type-memory: #45c9c0;
+  --type-default: #9aa7b6;
+
+  --gutter: rgba(233, 232, 240, 0.28);
   --added-inline: rgba(31, 138, 91, 0.28);
   --removed-inline: rgba(210, 72, 59, 0.3);
 
@@ -61,22 +73,16 @@
     -webkit-font-smoothing: antialiased;
     transition: background-color 0.2s ease, color 0.2s ease;
   }
-  /* Bold grotesk display for headings. */
-  h1,
-  h2,
-  h3,
-  h4 {
+  h1, h2, h3, h4 {
     font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
     letter-spacing: -0.01em;
   }
 }
 
-/* Subtle, low-contrast brand wash behind the app. */
+/* Colourful, low-contrast wash behind the app. */
 .app-bg {
-  background-image: radial-gradient(
-      60rem 30rem at 110% -10%,
-      var(--brand-soft),
-      transparent 60%
-    ),
-    radial-gradient(50rem 25rem at -10% 0%, rgba(76, 99, 182, 0.05), transparent 55%);
+  background-image:
+    radial-gradient(55rem 28rem at 108% -8%, var(--brand-soft), transparent 60%),
+    radial-gradient(45rem 24rem at -8% 4%, rgba(18, 168, 160, 0.07), transparent 55%),
+    radial-gradient(40rem 22rem at 60% 120%, rgba(232, 137, 59, 0.06), transparent 60%);
 }
