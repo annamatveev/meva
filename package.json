@@ -10,7 +10,8 @@
     "build": "pnpm --filter \"./packages/*\" run build && pnpm --filter \"./apps/*\" run build",
     "typecheck": "pnpm -r typecheck",
     "seed": "pnpm --filter @context-studio/server seed",
-    "setup": "pnpm install && pnpm --filter @context-studio/server prisma:generate && pnpm seed"
+    "db:migrate": "pnpm --filter @context-studio/server exec prisma migrate deploy",
+    "bootstrap": "pnpm install && pnpm --filter @context-studio/server prisma:generate && pnpm db:migrate && pnpm seed"
   },
   "packageManager": "pnpm@10.29.3",
   "engines": {

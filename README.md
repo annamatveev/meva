@@ -44,14 +44,25 @@ every autosave into one semantic commit on `main` and deletes the branch.
 ## Setup & run
 
 ```bash
-pnpm install
-pnpm --filter @context-studio/server prisma:generate   # generate Prisma client
-pnpm --filter @context-studio/server exec prisma migrate dev --name init   # create SQLite schema
-pnpm seed                                               # init .context-repo + sample CPR
-pnpm dev                                                # server :4000, web :3000
+pnpm bootstrap   # install + generate Prisma client + apply migrations + seed
+pnpm dev         # server :4000, web :3000
 ```
 
-Then open **http://localhost:3000/pr/pr-001**.
+> Note: the one-shot command is `pnpm bootstrap`, **not** `pnpm setup` —
+> `setup` is a reserved pnpm built-in (it configures `PNPM_HOME`).
+
+Then open **http://localhost:3000** (dashboard) or **/pr/pr-001** (review screen).
+
+<details><summary>…or run the steps individually</summary>
+
+```bash
+pnpm install
+pnpm --filter @context-studio/server prisma:generate
+pnpm --filter @context-studio/server exec prisma migrate deploy
+pnpm seed
+pnpm dev
+```
+</details>
 
 ## Test
 
