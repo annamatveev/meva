@@ -10,7 +10,7 @@ import { parseBlocks, blockKey } from "@/lib/blocks";
 import { relativeTime } from "@/components/cpr/ui";
 import { SourceChip } from "@/components/ui/SourceChip";
 
-type Mode = "write" | "review";
+type Mode = "edit" | "source";
 type SaveState = "idle" | "saving" | "saved" | "error";
 type AnnoStyle = "mark" | "strike" | "replace";
 
@@ -26,21 +26,7 @@ interface Anno {
   replacement?: string;
 }
 
-const C = { indigo: "#5b54e8", rose: "#d2483b", amber: "#e8893b" };
-
-// plannotator-style annotation presets.
-const PRESETS: Array<{ label: string; emoji: string; color: string }> = [
-  { label: "Clarify this", emoji: "❓", color: "#e0a93b" },
-  { label: "Missing info", emoji: "🧩", color: "#9b5cf6" },
-  { label: "Verify this", emoji: "🔍", color: "#e8893b" },
-  { label: "Give an example", emoji: "🧪", color: "#4f6bed" },
-  { label: "Match existing patterns", emoji: "🧭", color: "#12a8a0" },
-  { label: "Consider alternatives", emoji: "🔁", color: "#e0518f" },
-  { label: "Ensure no regression", emoji: "🛡️", color: "#e8893b" },
-  { label: "Out of scope", emoji: "🚫", color: "#d2483b" },
-  { label: "Needs review", emoji: "✅", color: "#4f6bed" },
-  { label: "Nice approach", emoji: "👍", color: "#1f9d57" },
-];
+const C = { indigo: "#0969da", rose: "#cf222e", amber: "#bf8700" };
 
 const CONF: Record<Confidence, { rail: string; label: string; cls: string }> = {
   human: { rail: "border-emerald-500", label: "Human-written — trusted", cls: "text-emerald-600 dark:text-emerald-400" },
@@ -72,15 +58,14 @@ export function Editor({
 }) {
   const router = useRouter();
   const [content, setContent] = useState(doc.content);
-  const [mode, setMode] = useState<Mode>("review");
+  const [mode, setMode] = useState<Mode>("edit");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [draftPrId, setDraftPrId] = useState<string | undefined>(doc.draftPrId);
   const [showPropose, setShowPropose] = useState(false);
 
   const [annos, setAnnos] = useState<Anno[]>([]);
   const [sel, setSel] = useState<{ blockIdx: number; quote: string; x: number; y: number } | null>(null);
-  const [showPresets, setShowPresets] = useState(false);
-  const [composing, setComposing] = useState<{ blockIdx: number; quote: string; mode: "comment" | "replace" } | null>(null);
+  const [composing, setComposing] = useState<{ blockIdx: number; quote: string; mode: "note" | "edit" } | null>(null);
   const [draftText, setDraftText] = useState("");
 
   const docRef = useRef<HTMLDivElement | null>(null);
@@ -123,10 +108,7 @@ export function Editor({
     const s = window.getSelection();
     const quote = s?.toString().trim() ?? "";
     if (!quote || !s || s.rangeCount === 0) {
-      if (!composing) {
-        setSel(null);
-        setShowPresets(false);
-      }
+      if (!composing) setSel(null);
       return;
     }
     let node: Node | null = s.anchorNode;
@@ -136,13 +118,11 @@ export function Editor({
     const blockIdx = Number((el as HTMLElement).dataset.bi);
     const rect = s.getRangeAt(0).getBoundingClientRect();
     setSel({ blockIdx, quote, x: rect.left + rect.width / 2, y: rect.top });
-    setShowPresets(false);
   }
 
   const add = (a: Omit<Anno, "id">) => {
     setAnnos((x) => [...x, { ...a, id: nextId() }]);
     setSel(null);
-    setShowPresets(false);
     window.getSelection()?.removeAllRanges();
   };
 
@@ -155,9 +135,9 @@ export function Editor({
   function commitComposing() {
     if (!composing || !draftText.trim()) return;
     add(
-      composing.mode === "comment"
-        ? { blockIdx: composing.blockIdx, quote: composing.quote, label: "Comment", color: C.indigo, style: "mark", note: draftText.trim() }
-        : { blockIdx: composing.blockIdx, quote: composing.quote, label: "Replace", color: C.amber, style: "replace", replacement: draftText.trim() },
+      composing.mode === "note"
+        ? { blockIdx: composing.blockIdx, quote: composing.quote, label: "Note", color: C.indigo, style: "mark", note: draftText.trim() }
+        : { blockIdx: composing.blockIdx, quote: composing.quote, label: "Edit", color: C.amber, style: "replace", replacement: draftText.trim() },
     );
     setComposing(null);
     setDraftText("");
@@ -169,7 +149,7 @@ export function Editor({
         <div>
           <h1 className="font-mono text-sm text-muted">{currentPath}</h1>
           <p className="text-xs text-muted">
-            Review surface — select any text to annotate. Edits autosave privately until you propose them.
+            Editing surface — select text to edit, delete, or leave a note. Edits autosave privately until you propose them.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -190,7 +170,7 @@ export function Editor({
 
         <div className="space-y-3">
           <div className="inline-flex rounded-lg border border-line bg-surface p-0.5 text-sm">
-            {(["review", "write"] as Mode[]).map((m) => (
+            {(["edit", "source"] as Mode[]).map((m) => (
               <button
                 key={m}
                 onClick={() => setMode(m)}
@@ -201,7 +181,7 @@ export function Editor({
             ))}
           </div>
 
-          {mode === "write" ? (
+          {mode === "source" ? (
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -228,39 +208,23 @@ export function Editor({
       {sel && !composing && (
         <div className="fixed z-40 -translate-x-1/2 -translate-y-full" style={{ left: sel.x, top: sel.y - 8 }}>
           <div className="flex items-center gap-0.5 rounded-lg border border-line bg-surface p-1 text-sm shadow-lg">
-            <IconBtn title="Delete" onClick={() => add({ blockIdx: sel.blockIdx, quote: sel.quote, label: "Delete", color: C.rose, style: "strike" })}>🗑️</IconBtn>
-            <IconBtn title="Comment" onClick={() => { setComposing({ blockIdx: sel.blockIdx, quote: sel.quote, mode: "comment" }); setDraftText(""); setSel(null); }}>💬</IconBtn>
-            <IconBtn title="Replace" onClick={() => { setComposing({ blockIdx: sel.blockIdx, quote: sel.quote, mode: "replace" }); setDraftText(""); setSel(null); }}>✏️</IconBtn>
-            <IconBtn title="Quick annotations" active={showPresets} onClick={() => setShowPresets((v) => !v)}>⚡</IconBtn>
+            <IconBtn title="Edit" onClick={() => { setComposing({ blockIdx: sel.blockIdx, quote: sel.quote, mode: "edit" }); setDraftText(sel.quote); setSel(null); }}>✏️ Edit</IconBtn>
+            <IconBtn title="Note" onClick={() => { setComposing({ blockIdx: sel.blockIdx, quote: sel.quote, mode: "note" }); setDraftText(""); setSel(null); }}>💬 Note</IconBtn>
+            <IconBtn title="Delete" onClick={() => add({ blockIdx: sel.blockIdx, quote: sel.quote, label: "Delete", color: C.rose, style: "strike" })}>🗑️ Delete</IconBtn>
           </div>
-          {showPresets && (
-            <div className="mt-1 max-h-72 w-64 overflow-auto rounded-lg border border-line bg-surface p-1 text-sm shadow-lg">
-              {PRESETS.map((p) => (
-                <button
-                  key={p.label}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => add({ blockIdx: sel.blockIdx, quote: sel.quote, label: p.label, emoji: p.emoji, color: p.color, style: "mark" })}
-                  className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left hover:bg-hover"
-                >
-                  <span>{p.emoji}</span>
-                  <span>{p.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       )}
 
       {composing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={() => setComposing(null)}>
           <div className="w-full max-w-md space-y-3 rounded-xl bg-surface p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="text-sm font-semibold">{composing.mode === "comment" ? "Comment" : "Replace"}</div>
+            <div className="text-sm font-semibold">{composing.mode === "note" ? "Note" : "Edit text"}</div>
             <div className="rounded-lg bg-surface2 px-3 py-2 text-xs italic text-muted">“{composing.quote}”</div>
             <textarea
               autoFocus
               value={draftText}
               onChange={(e) => setDraftText(e.target.value)}
-              placeholder={composing.mode === "comment" ? "Add a comment…" : "Write the replacement text…"}
+              placeholder={composing.mode === "note" ? "Add a note…" : "Edit the selected text…"}
               className="h-24 w-full resize-none rounded-lg border border-line bg-surface px-3 py-2 text-sm"
             />
             <div className="flex justify-end gap-2">
@@ -390,7 +354,15 @@ function Block({
       {hover && attribution && meta && (
         <div className="absolute left-3 z-10 mt-1 w-72 rounded-lg border border-line bg-surface p-2.5 text-xs shadow-lg">
           <div className={`font-medium ${meta.cls}`}>{meta.label}</div>
-          <div className="mt-1 text-muted">{attribution.author.name} · {relativeTime(attribution.mergedAt)}</div>
+          {conf === "agent_unverified" ? (
+            <div className="mt-1 text-muted">Written by {attribution.author.name} · not yet reviewed</div>
+          ) : (
+            <div className="mt-1 text-muted">
+              ✓ Verified by {attribution.verifiedBy ?? (attribution.author.kind === "human" ? attribution.author.name : "a reviewer")}
+              {attribution.author.kind === "agent" && <> · written by {attribution.author.name}</>}
+              {" · "}{relativeTime(attribution.mergedAt)}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -424,14 +396,14 @@ function Annotations({ annos, onRemove, onPropose }: { annos: Anno[]; onRemove: 
   if (annos.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-line p-3 text-xs text-muted">
-        Select text to annotate — delete, comment, replace, or pick a quick annotation (⚡).
+        Select text to edit, delete, or leave a note.
       </p>
     );
   }
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">Annotations · {annos.length}</div>
+        <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">Pending edits · {annos.length}</div>
         <button
           onClick={onPropose}
           className="rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90"

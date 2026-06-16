@@ -117,6 +117,8 @@ export interface Attribution {
   prId: string;
   prTitle: string;
   confidence?: Confidence;
+  /** Who verified it: the human author (manual edit) or the approver (agent edit). */
+  verifiedBy?: string;
 }
 
 // ---------------------------------------------------------------------------

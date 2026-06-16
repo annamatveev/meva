@@ -226,16 +226,22 @@ const WORKSPACE: WorkspaceInfo = {
   documents: [
     "policies/refunds.md",
     "policies/shipping.md",
+    "policies/privacy.md",
     "skills/issue-refund.md",
     "skills/lookup-order.md",
+    "skills/escalate-to-human.md",
     "memory/known-edge-cases.md",
+    "memory/customer-faqs.md",
   ],
   files: [
     { path: "policies/refunds.md", kind: "context" },
     { path: "policies/shipping.md", kind: "context" },
+    { path: "policies/privacy.md", kind: "context" },
     { path: "skills/issue-refund.md", kind: "skills" },
     { path: "skills/lookup-order.md", kind: "skills" },
+    { path: "skills/escalate-to-human.md", kind: "skills" },
     { path: "memory/known-edge-cases.md", kind: "memory" },
+    { path: "memory/customer-faqs.md", kind: "memory" },
   ],
   agents: [
     { id: "agent-refunds", name: "Refund Resolution Agent" },
@@ -308,7 +314,42 @@ Issue the refund to the original payment method.
 ## Steps
 
 Search by customer email, then narrow by order ID or date.
+
+If the email isn't found, try the billing name plus the last four card digits.
+
+Never read a full card number aloud or into chat.
 `,
+    marks: { "If the email isn't found, try the billing name plus the last four card digits.": "agent_unverified" },
+  },
+  "skills/escalate-to-human.md": {
+    kind: "skills",
+    content: `# Escalate to a human
+
+## When to escalate
+
+A refund is disputed, over $500, or the customer is asking for an exception.
+
+The customer is upset after two replies, or threatens a chargeback.
+
+## How
+
+Summarize the conversation, the order ID, and what the customer wants.
+
+Hand off to the Support lead on shift via the #support-escalations channel.
+`,
+    marks: { "The customer is upset after two replies, or threatens a chargeback.": "agent_approved" },
+  },
+  "policies/privacy.md": {
+    kind: "context",
+    content: `# Privacy
+
+We store customer data only as long as needed to fulfill orders and support.
+
+Customers may request deletion of their data at any time via privacy@acme.com.
+
+Card numbers are never stored; payments go through the processor's vault.
+`,
+    marks: { "Customers may request deletion of their data at any time via privacy@acme.com.": "agent_unverified" },
   },
   "memory/known-edge-cases.md": {
     kind: "memory",
@@ -317,8 +358,27 @@ Search by customer email, then narrow by order ID or date.
 Gift-card purchases are non-refundable.
 
 Bundled items must be returned together to qualify.
+
+Pre-orders can be cancelled any time before they ship.
+
+Store-credit refunds appear instantly; card refunds take 5 business days.
 `,
-    marks: { "Bundled items must be returned together to qualify.": "agent_unverified" },
+    marks: {
+      "Bundled items must be returned together to qualify.": "agent_unverified",
+      "Store-credit refunds appear instantly; card refunds take 5 business days.": "agent_approved",
+    },
+  },
+  "memory/customer-faqs.md": {
+    kind: "memory",
+    content: `# Customer FAQs
+
+"Where is my order?" — share the tracking link from the order page.
+
+"Can I change my address?" — only before the order ships.
+
+"Do you ship internationally?" — yes, with customs fees paid by the customer.
+`,
+    marks: { '"Do you ship internationally?" — yes, with customs fees paid by the customer.': "agent_approved" },
   },
 };
 
@@ -386,6 +446,8 @@ export const demo = {
           prId: isAgent ? "pr-agent-x1" : "pr-000",
           prTitle: isAgent ? "Agent: store-credit fallback" : "Establish policy",
           confidence: conf,
+          // Human edits are self-verified; approved agent edits are verified by the approver.
+          verifiedBy: conf === "agent_unverified" ? undefined : conf === "human" ? OWNER.name : "Dana Levi",
         },
       };
     });

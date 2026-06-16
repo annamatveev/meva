@@ -55,6 +55,8 @@ export class DocService {
             prTitle: hit.prTitle,
             // On main, agent content got here via a human-approved merge.
             confidence: hit.author.kind === "human" ? "human" : "agent_approved",
+            // Human edits are self-verified; agent edits were verified by the merger.
+            verifiedBy: hit.author.kind === "human" ? hit.author.name : undefined,
           }
         : undefined;
       return { blockKey: key, attribution };
