@@ -11,6 +11,8 @@ const mono = Space_Mono({ subsets: ["latin"], weight: ["400", "700"], variable: 
 import { ThemeToggle } from "@/components/brand/ThemeToggle";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { DemoBanner } from "@/components/demo/DemoBanner";
+import { DEMO } from "@/lib/demo";
 
 export const metadata: Metadata = {
   title: "meva — Context Studio",
@@ -30,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <div className="app-bg min-h-screen">
+          {DEMO && <DemoBanner />}
           <header className="sticky top-0 z-30 border-b border-line bg-surface/70 backdrop-blur">
             <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 py-3">
               <a href="/" className="flex items-center gap-2.5">

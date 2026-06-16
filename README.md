@@ -67,6 +67,16 @@ every autosave into one semantic commit on `main` and deletes the branch.
   Anthropic agents.
 - SSO (Okta/Google) and email digests are roadmap — they need your IdP / SMTP.
 
+## Demo (public, no backend)
+
+```bash
+NEXT_PUBLIC_DEMO=1 pnpm --filter @context-studio/web dev   # → http://localhost:3000
+```
+
+Serves sample data and simulates writes — no server/git/database needed. Deploy
+the web app with `NEXT_PUBLIC_DEMO=1` (e.g. Vercel) for a free public demo. See
+[docs/demo.md](docs/demo.md).
+
 ## Run with Docker (whole stack)
 
 ```bash
