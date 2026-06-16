@@ -6,19 +6,14 @@
  * For the prototype it's a static registry keyed by section keywords.
  */
 
-import type { BlastSeverity, SemanticDiff } from "@context-studio/types";
+import type { BlastSeverity, RegisteredAgent, SemanticDiff } from "@context-studio/types";
 
-interface RegisteredAgent {
-  id: string;
-  name: string;
-  purpose: string;
-  /** Lowercased keywords; if a changed heading/section matches, the agent is hit. */
-  watches: string[];
-  /** Base severity when this agent is affected. */
-  baseSeverity: BlastSeverity;
-}
-
-export const AGENT_REGISTRY: RegisteredAgent[] = [
+/**
+ * Built-in fallback registry, used when the bound workspace has no
+ * `.contextstudio.yml` agent mapping. Real workspaces should declare their
+ * agents in that file so the mapping is versioned with the content.
+ */
+export const BUILTIN_AGENTS: RegisteredAgent[] = [
   {
     id: "agent-refunds",
     name: "Refund Resolution Agent",
@@ -62,15 +57,20 @@ export interface ComputedBlastEntry {
 /**
  * Determine which agents a proposed change affects by matching their watched
  * keywords against the text of changed (added / removed / modified) blocks.
+ * `agents` comes from the bound workspace (.contextstudio.yml), or the built-in
+ * fallback when none is declared.
  */
-export function computeBlastEntries(diff: SemanticDiff): ComputedBlastEntry[] {
+export function computeBlastEntries(
+  diff: SemanticDiff,
+  agents: RegisteredAgent[] = BUILTIN_AGENTS,
+): ComputedBlastEntry[] {
   const changed = diff.blocks.filter((b) => b.kind !== "unchanged");
   const haystack = changed
     .map((b) => `${b.before ?? ""} ${b.after ?? ""}`.toLowerCase())
     .join(" ");
 
   const entries: ComputedBlastEntry[] = [];
-  for (const agent of AGENT_REGISTRY) {
+  for (const agent of agents) {
     const matched = agent.watches.filter((w) => haystack.includes(w));
     if (matched.length === 0) continue;
 

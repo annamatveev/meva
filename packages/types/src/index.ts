@@ -246,6 +246,42 @@ export interface ReviewTicket {
 }
 
 // ---------------------------------------------------------------------------
+// Workspace (Module 5 — binding to an external context store)
+// ---------------------------------------------------------------------------
+
+export type WorkspaceSourceType = "local" | "remote";
+
+/** A registered agent + its context subscription (from .contextstudio.yml). */
+export interface RegisteredAgent {
+  id: string;
+  name: string;
+  purpose: string;
+  /** Lowercase keywords; a changed block matching any → this agent is affected. */
+  watches: string[];
+  baseSeverity: BlastSeverity;
+}
+
+/** The active workspace, as surfaced to the UI. */
+export interface WorkspaceInfo {
+  configured: boolean;
+  sourceType?: WorkspaceSourceType;
+  location?: string;
+  identityName?: string;
+  identityEmail?: string;
+  /** Discovered document paths in the bound store. */
+  documents: string[];
+  /** Discovered agents (from .contextstudio.yml, else built-in fallback). */
+  agents: Array<{ id: string; name: string }>;
+}
+
+export interface ConfigureWorkspaceBody {
+  sourceType: WorkspaceSourceType;
+  location: string;
+  identityName: string;
+  identityEmail: string;
+}
+
+// ---------------------------------------------------------------------------
 // Editing (Module 3)
 // ---------------------------------------------------------------------------
 

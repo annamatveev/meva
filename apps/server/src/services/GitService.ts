@@ -110,6 +110,24 @@ export class GitService {
     }
   }
 
+  /** Clone a remote into this working dir (no-op if already a repo here). */
+  async ensureClonedFrom(remoteUrl: string): Promise<void> {
+    const isRepoRoot = await this.git.checkIsRepo("root" as any).catch(() => false);
+    if (isRepoRoot) {
+      await this.git.fetch().catch(() => {});
+      return;
+    }
+    await this.git.raw(["clone", remoteUrl, "."]);
+    await this.git.addConfig("user.name", "Context Studio");
+    await this.git.addConfig("user.email", "system@context.studio");
+    await this.ensureOnBranch(MAIN_BRANCH);
+  }
+
+  /** Push the approved main back to the canonical remote (remote workspaces). */
+  async pushMain(): Promise<void> {
+    await this.git.push(["origin", MAIN_BRANCH]);
+  }
+
   /** List every document path tracked on a branch (default main). */
   async listDocuments(branch: string = MAIN_BRANCH): Promise<string[]> {
     try {

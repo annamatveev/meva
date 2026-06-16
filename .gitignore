@@ -20,3 +20,6 @@ apps/server/.context-repo/
 # Logs / OS
 *.log
 .DS_Store
+
+# Disposable working clones for remote workspaces
+apps/server/.workspaces/

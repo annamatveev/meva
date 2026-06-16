@@ -11,9 +11,10 @@ import type {
   Attribution,
   AutosaveResponse,
   DocumentView,
+  RegisteredAgent,
 } from "@context-studio/types";
 import { db } from "../lib/db.js";
-import { computeBlastEntries } from "../lib/agents.js";
+import { BUILTIN_AGENTS, computeBlastEntries } from "../lib/agents.js";
 import { GitService, MAIN_BRANCH } from "./GitService.js";
 import { blockKey, computeSemanticDiff } from "./SemanticDiffService.js";
 
@@ -21,7 +22,10 @@ export class DocNotFoundError extends Error {}
 export class DraftNotFoundError extends Error {}
 
 export class DocService {
-  constructor(private readonly git: GitService) {}
+  constructor(
+    private readonly git: GitService,
+    private readonly agents: RegisteredAgent[] = BUILTIN_AGENTS,
+  ) {}
 
   /** Document content + per-block attribution + the user's open draft, if any. */
   async getDocumentView(documentPath: string, actingUserId: string): Promise<DocumentView> {
@@ -116,7 +120,7 @@ export class DocService {
     const before = await this.git.readDocument(MAIN_BRANCH, draft.documentPath);
     const after = await this.git.readDocument(draft.draftBranch, draft.documentPath);
     const diff = computeSemanticDiff(draft.documentPath, before, after);
-    const blast = computeBlastEntries(diff);
+    const blast = computeBlastEntries(diff, this.agents);
 
     const owner = await db.author.findFirst({
       where: { kind: "human", NOT: { id: draft.authorId } },

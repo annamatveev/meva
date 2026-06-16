@@ -6,14 +6,20 @@
  */
 
 import { Router } from "express";
-import type { FreshnessService } from "../services/FreshnessService.js";
+import { FreshnessService } from "../services/FreshnessService.js";
+import type { WorkspaceManager } from "../services/WorkspaceManager.js";
 
-export function createGovernanceRouter(freshness: FreshnessService): Router {
+export function createGovernanceRouter(wm: WorkspaceManager): Router {
   const router = Router();
 
   router.get("/freshness", async (_req, res) => {
+    const ctx = wm.current();
+    if (!ctx) {
+      res.status(409).json({ error: "No workspace configured.", code: "NO_WORKSPACE" });
+      return;
+    }
     try {
-      res.json(await freshness.getOverview());
+      res.json(await new FreshnessService(ctx.git).getOverview());
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Failed to load freshness overview." });
@@ -21,8 +27,13 @@ export function createGovernanceRouter(freshness: FreshnessService): Router {
   });
 
   router.get("/tickets", async (_req, res) => {
+    const ctx = wm.current();
+    if (!ctx) {
+      res.status(409).json({ error: "No workspace configured.", code: "NO_WORKSPACE" });
+      return;
+    }
     try {
-      res.json(await freshness.listTickets());
+      res.json(await new FreshnessService(ctx.git).listTickets());
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Failed to load review tickets." });

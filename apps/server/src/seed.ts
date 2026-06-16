@@ -41,6 +41,35 @@ const REFUND_AGENT: DomainAuthor = {
   role: "Autonomous agent",
 };
 
+// Versioned workspace config: which docs are managed, and the agent→context map
+// that drives blast radius + per-agent distribution.
+const CONTEXTSTUDIO_YML = `# Context Studio workspace config
+documents:
+  - policies/refunds.md
+
+agents:
+  - id: agent-refunds
+    name: Refund Resolution Agent
+    purpose: Decides customer refund eligibility and amounts.
+    watches: [refund, return, window, eligibility]
+    baseSeverity: high
+  - id: agent-billing
+    name: Billing Reconciliation Agent
+    purpose: Reconciles invoices and applies credits.
+    watches: [billing, invoice, credit, charge, fee]
+    baseSeverity: medium
+  - id: agent-support
+    name: Tier-1 Support Agent
+    purpose: Answers customer questions from policy context.
+    watches: [policy, support, contact, hours, escalation]
+    baseSeverity: low
+  - id: agent-compliance
+    name: Compliance Audit Agent
+    purpose: Flags policy text that conflicts with regulation.
+    watches: [compliance, regulation, gdpr, retention, consent]
+    baseSeverity: high
+`;
+
 const BASELINE = `# Refund Policy
 
 Customers may request a refund through the support portal or by email.
@@ -89,6 +118,7 @@ Refunds above $500 require a second approver before they are issued.
 
 async function resetDb() {
   // Order matters for FK constraints.
+  await db.workspace.deleteMany();
   await db.reviewTicket.deleteMany();
   await db.blockFreshness.deleteMany();
   await db.attributionEntry.deleteMany();
@@ -114,6 +144,28 @@ async function main() {
       data: { id: a.id, kind: a.kind, name: a.name, role: a.role ?? null },
     });
   }
+
+  // --- Workspace config committed into the repo (.contextstudio.yml) ----
+  // The document layout + agent mapping live WITH the content, so they're
+  // versioned and travel with the repo.
+  console.log("[seed] committing .contextstudio.yml…");
+  await git.commitOnMain({
+    docPath: ".contextstudio.yml",
+    content: CONTEXTSTUDIO_YML,
+    author: OWNER,
+    message: "Add Context Studio workspace config",
+  });
+
+  // Bind this instance to the seeded repo as a local workspace.
+  await db.workspace.create({
+    data: {
+      id: "default",
+      sourceType: "local",
+      location: CONTEXT_REPO_DIR,
+      identityName: OWNER.name,
+      identityEmail: "dana@context.studio",
+    },
+  });
 
   // --- Baseline policy committed to main (pr-000, already merged) -------
   console.log("[seed] committing baseline policy to main…");

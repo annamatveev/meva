@@ -1,10 +1,21 @@
 import Link from "next/link";
-import { getFreshnessOverview, listContextPrs } from "@/lib/api";
+import { redirect } from "next/navigation";
+import { getFreshnessOverview, getWorkspace, listContextPrs } from "@/lib/api";
 import { AuthorBadge, SeverityPill, StatusBadge, relativeTime } from "@/components/cpr/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function Dashboard() {
+  // No workspace bound yet → send the user to the setup wizard.
+  // (redirect() throws NEXT_REDIRECT, so it must run outside the try/catch.)
+  let needsSetup = false;
+  try {
+    needsSetup = !(await getWorkspace()).configured;
+  } catch {
+    // fall through to the backend-unreachable card below
+  }
+  if (needsSetup) redirect("/setup");
+
   let prs;
   let freshness;
   try {

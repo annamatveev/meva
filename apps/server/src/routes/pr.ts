@@ -1,43 +1,57 @@
 /**
  * Context PR routes.
  *
+ *   GET  /api/context/pr                — list CPRs (dashboard)
  *   GET  /api/context/pr/:id            — full CPR for the review screen
  *   POST /api/context/pr/:id/approve    — approval routing + squash-merge
  *   POST /api/context/pr/agent-submit   — autonomous agents open a CPR
+ *
+ * Git access is resolved per-request from the active workspace.
  */
 
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { z } from "zod";
 import type { AgentSubmitResponse } from "@context-studio/types";
 import { db } from "../lib/db.js";
 import { computeBlastEntries } from "../lib/agents.js";
-import { GitService, MAIN_BRANCH } from "../services/GitService.js";
+import { MAIN_BRANCH } from "../services/GitService.js";
 import {
   MergeBlockedError,
   PrNotFoundError,
   PrService,
 } from "../services/PrService.js";
 import { computeSemanticDiff } from "../services/SemanticDiffService.js";
+import type { WorkspaceManager } from "../services/WorkspaceManager.js";
 
-export function createPrRouter(git: GitService): Router {
+/** Resolve the active workspace or send 409 — null means "handled, stop". */
+function requireWorkspace(wm: WorkspaceManager, res: Response) {
+  const ctx = wm.current();
+  if (!ctx) {
+    res.status(409).json({ error: "No workspace configured.", code: "NO_WORKSPACE" });
+    return null;
+  }
+  return ctx;
+}
+
+export function createPrRouter(wm: WorkspaceManager): Router {
   const router = Router();
-  const prs = new PrService(git);
 
-  // --- List CPRs (dashboard) --------------------------------------------
   router.get("/", async (_req, res) => {
+    const ctx = requireWorkspace(wm, res);
+    if (!ctx) return;
     try {
-      res.json(await prs.listContextPrs());
+      res.json(await new PrService(ctx.git).listContextPrs());
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Failed to list Context PRs." });
     }
   });
 
-  // --- Read a CPR --------------------------------------------------------
   router.get("/:id", async (req, res) => {
+    const ctx = requireWorkspace(wm, res);
+    if (!ctx) return;
     try {
-      const pr = await prs.getContextPr(req.params.id);
-      res.json(pr);
+      res.json(await new PrService(ctx.git).getContextPr(req.params.id));
     } catch (err) {
       if (err instanceof PrNotFoundError) {
         res.status(404).json({ error: err.message });
@@ -48,7 +62,6 @@ export function createPrRouter(git: GitService): Router {
     }
   });
 
-  // --- Approval routing --------------------------------------------------
   const approvalSchema = z.object({
     reviewerId: z.string().min(1),
     action: z.enum(["approve", "request_changes", "reject"]),
@@ -57,16 +70,22 @@ export function createPrRouter(git: GitService): Router {
   });
 
   router.post("/:id/approve", async (req, res) => {
+    const ctx = requireWorkspace(wm, res);
+    if (!ctx) return;
     const parsed = approvalSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
     try {
-      const result = await prs.applyApproval({
+      const result = await new PrService(ctx.git).applyApproval({
         prId: req.params.id,
         ...parsed.data,
       });
+      if (result.merged) {
+        await wm.publishCurrent(); // push approved main back to the canonical store
+        await wm.refreshDiscovery();
+      }
       res.json(result);
     } catch (err) {
       if (err instanceof PrNotFoundError) {
@@ -82,7 +101,6 @@ export function createPrRouter(git: GitService): Router {
     }
   });
 
-  // --- Agents open a Context PR programmatically -------------------------
   const agentSubmitSchema = z.object({
     agentId: z.string().min(1),
     agentName: z.string().min(1),
@@ -93,6 +111,8 @@ export function createPrRouter(git: GitService): Router {
   });
 
   router.post("/agent-submit", async (req, res) => {
+    const ctx = requireWorkspace(wm, res);
+    if (!ctx) return;
     const parsed = agentSubmitSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.flatten() });
@@ -102,32 +122,23 @@ export function createPrRouter(git: GitService): Router {
     const prId = `pr-agent-${Date.now().toString(36)}`;
 
     try {
-      // The agent's identity is recorded as a first-class author.
       await db.author.upsert({
         where: { id: body.agentId },
         update: { name: body.agentName },
-        create: {
-          id: body.agentId,
-          kind: "agent",
-          name: body.agentName,
-          role: "Autonomous agent",
-        },
+        create: { id: body.agentId, kind: "agent", name: body.agentName, role: "Autonomous agent" },
       });
 
-      // Transparent Git: create the draft branch + autosave the proposal.
-      const { branch } = await git.autosaveDraft({
+      const { branch } = await ctx.git.autosaveDraft({
         prId,
         docPath: body.documentPath,
         content: body.proposedContent,
         author: { id: body.agentId, kind: "agent", name: body.agentName },
       });
 
-      // Compute blast radius from the proposed change.
-      const before = await git.readDocument(MAIN_BRANCH, body.documentPath);
+      const before = await ctx.git.readDocument(MAIN_BRANCH, body.documentPath);
       const diff = computeSemanticDiff(body.documentPath, before, body.proposedContent);
-      const blast = computeBlastEntries(diff);
+      const blast = computeBlastEntries(diff, ctx.agents);
 
-      // Default reviewer: the human Context Owner must sign off on agent PRs.
       const owner = await db.author.findFirst({ where: { kind: "human" } });
 
       await db.pr.create({

@@ -14,6 +14,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// The connection to the external context store this instance manages.
+// meva holds at most a disposable working copy; the canonical content lives at
+// `location`. A single active workspace is supported (id = "default").
+model Workspace {
+  id            String   @id @default("default")
+  sourceType    String // "local" | "remote"
+  location      String // local path, or a git remote URL
+  identityName  String
+  identityEmail String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 model Author {
   id        String   @id
   kind      String // "human" | "agent"

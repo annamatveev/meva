@@ -7,16 +7,19 @@
 
 import { Router } from "express";
 import { ExportService } from "../services/ExportService.js";
-import type { GitService } from "../services/GitService.js";
+import type { WorkspaceManager } from "../services/WorkspaceManager.js";
 
-export function createExportRouter(git: GitService): Router {
+export function createExportRouter(wm: WorkspaceManager): Router {
   const router = Router();
-  const exporter = new ExportService(git);
 
   router.get("/llms.txt", async (_req, res) => {
+    const ctx = wm.current();
+    if (!ctx) {
+      res.status(409).json({ error: "No workspace configured." });
+      return;
+    }
     try {
-      const text = await exporter.buildLlmsTxt();
-      res.type("text/plain").send(text);
+      res.type("text/plain").send(await new ExportService(ctx.git).buildLlmsTxt());
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Failed to build llms.txt." });
@@ -24,8 +27,13 @@ export function createExportRouter(git: GitService): Router {
   });
 
   router.get("/fcontext", async (_req, res) => {
+    const ctx = wm.current();
+    if (!ctx) {
+      res.status(409).json({ error: "No workspace configured." });
+      return;
+    }
     try {
-      res.json(await exporter.buildFcontext());
+      res.json(await new ExportService(ctx.git).buildFcontext());
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Failed to build .fcontext manifest." });

@@ -31,7 +31,9 @@ export class ExportService {
 
   /** Build a single llms.txt from every document on main. */
   async buildLlmsTxt(): Promise<string> {
-    const docs = await this.git.listDocuments(MAIN_BRANCH);
+    const docs = (await this.git.listDocuments(MAIN_BRANCH)).filter(
+      (p) => !p.split("/").pop()!.startsWith("."),
+    );
     const stamp = new Date().toISOString();
     const parts: string[] = [
       "# Context Studio export",
@@ -47,7 +49,9 @@ export class ExportService {
 
   /** Build a .fcontext manifest with attribution + freshness per block. */
   async buildFcontext(): Promise<FcontextManifest> {
-    const docs = await this.git.listDocuments(MAIN_BRANCH);
+    const docs = (await this.git.listDocuments(MAIN_BRANCH)).filter(
+      (p) => !p.split("/").pop()!.startsWith("."),
+    );
     const documents: FcontextManifest["documents"] = [];
 
     for (const path of docs) {

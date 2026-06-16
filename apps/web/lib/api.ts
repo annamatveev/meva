@@ -2,11 +2,13 @@ import type {
   ApprovalRequestBody,
   ApprovalResponse,
   AutosaveResponse,
+  ConfigureWorkspaceBody,
   ContextPR,
   ContextPrSummary,
   DocumentView,
   FreshnessOverview,
   ReviewTicket,
+  WorkspaceInfo,
 } from "@context-studio/types";
 
 /** Base URL of the abstracted version-control backend (apps/server). */
@@ -21,6 +23,29 @@ export async function getContextPr(id: string): Promise<ContextPR | null> {
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Failed to load Context PR ${id}: ${res.status}`);
   return (await res.json()) as ContextPR;
+}
+
+/** Current workspace binding (server-side, uncached). */
+export async function getWorkspace(): Promise<WorkspaceInfo> {
+  const res = await fetch(`${API_BASE}/api/context/workspace`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to load workspace: ${res.status}`);
+  return (await res.json()) as WorkspaceInfo;
+}
+
+/** Bind to an external context store (client-side). */
+export async function configureWorkspace(
+  body: ConfigureWorkspaceBody,
+): Promise<{ ok: true; data: WorkspaceInfo } | { ok: false; error: string }> {
+  const res = await fetch(`${API_BASE}/api/context/workspace`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return { ok: false, error: typeof json.error === "string" ? json.error : "Failed." };
+  }
+  return { ok: true, data: json as WorkspaceInfo };
 }
 
 /** List all Context PRs for the dashboard (server-side, uncached). */

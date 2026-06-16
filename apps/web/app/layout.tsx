@@ -36,6 +36,9 @@ export default function RootLayout({
                 >
                   Editor
                 </a>
+                <a href="/setup" className="rounded-md px-2.5 py-1 text-muted hover:bg-black/[0.04] hover:text-ink">
+                  Workspace
+                </a>
               </nav>
             </div>
           </header>

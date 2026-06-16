@@ -68,6 +68,17 @@ Translates UI verbs into raw Git:
 - Blocks touched by two or more open CPRs are marked `conflicted`.
 - Surfaced at `apps/web/app/governance`.
 
+### 5. Workspace binding — `apps/server/src/services/WorkspaceManager.ts`
+- meva does not own the context. It binds to an **external store** via a saved
+  `Workspace` (location + identity); it holds at most a disposable working copy.
+- Two source types: **local** (operate on a directory path in place) or
+  **remote** (clone a git remote into a scratch workdir, push approved `main`
+  back on merge).
+- The document layout + agent mapping are discovered from a versioned
+  `.contextstudio.yml` at the repo root (built-in fallback when absent).
+- First-run setup wizard at `apps/web/app/setup`; all domain routes resolve Git
+  per-request from the active workspace and return 409 until one is configured.
+
 ## Tech stack
 
 | Layer    | Choice                                            |
