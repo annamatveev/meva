@@ -1,0 +1,568 @@
+openapi: 3.1.0
+info:
+  title: meva API
+  version: 0.1.0
+  description: >
+    The meva backend (apps/server). A Context Management IDE over a hidden Git
+    repo. Reads are open (LAN-trusted); writes/merges are gated by role
+    (owner / reviewer / viewer). Agents authenticate with an API key and may
+    only open change requests.
+servers:
+  - url: http://localhost:4000
+    description: Local backend
+
+tags:
+  - name: Auth
+  - name: Workspace
+  - name: Context PRs
+  - name: Governance
+  - name: Editing
+  - name: Export
+  - name: Distribution
+  - name: Health
+
+components:
+  securitySchemes:
+    sessionAuth:
+      type: http
+      scheme: bearer
+      description: Human session token from /auth/login or Google SSO.
+    agentKey:
+      type: http
+      scheme: bearer
+      description: Agent API key (agent-submit only).
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+        code:
+          type: string
+          enum: [NO_WORKSPACE, AUTH_REQUIRED, FORBIDDEN, AGENT_KEY_REQUIRED, BLAST_ACK_REQUIRED, EVALS_FAILED]
+      required: [error]
+    AccessRole:
+      type: string
+      enum: [owner, reviewer, viewer]
+    AuthorKind:
+      type: string
+      enum: [human, agent]
+    Author:
+      type: object
+      properties:
+        id: { type: string }
+        kind: { $ref: '#/components/schemas/AuthorKind' }
+        name: { type: string }
+        role: { type: string }
+      required: [id, kind, name]
+    SessionUser:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        role: { type: string }
+        accessRole: { $ref: '#/components/schemas/AccessRole' }
+      required: [id, name, accessRole]
+    AuthConfig:
+      type: object
+      properties:
+        googleEnabled: { type: boolean }
+        pickUserEnabled: { type: boolean }
+      required: [googleEnabled, pickUserEnabled]
+    LoginResponse:
+      type: object
+      properties:
+        token: { type: string }
+        user: { $ref: '#/components/schemas/SessionUser' }
+      required: [token, user]
+    WorkspaceInfo:
+      type: object
+      properties:
+        configured: { type: boolean }
+        sourceType: { type: string, enum: [local, remote] }
+        location: { type: string }
+        identityName: { type: string }
+        identityEmail: { type: string }
+        documents:
+          type: array
+          items: { type: string }
+        agents:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              name: { type: string }
+            required: [id, name]
+      required: [configured, documents, agents]
+    ConfigureWorkspaceBody:
+      type: object
+      properties:
+        sourceType: { type: string, enum: [local, remote] }
+        location: { type: string }
+        identityName: { type: string }
+        identityEmail: { type: string, format: email }
+      required: [sourceType, location, identityName, identityEmail]
+    BlastSeverity:
+      type: string
+      enum: [low, medium, high]
+    PrStatus:
+      type: string
+      enum: [draft, in_review, changes_requested, approved, merged, rejected]
+    PrOrigin:
+      type: string
+      enum: [ui, agent]
+    InlineSegment:
+      type: object
+      properties:
+        text: { type: string }
+        emphasis: { type: string, enum: [added, removed] }
+      required: [text]
+    Attribution:
+      type: object
+      properties:
+        author: { $ref: '#/components/schemas/Author' }
+        mergedAt: { type: string, format: date-time }
+        prId: { type: string }
+        prTitle: { type: string }
+      required: [author, mergedAt, prId, prTitle]
+    SemanticDiffBlock:
+      type: object
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [added, removed, modified, unchanged] }
+        blockType: { type: string, enum: [heading, paragraph, listItem, code, quote] }
+        depth: { type: integer }
+        before: { type: string }
+        after: { type: string }
+        segments:
+          type: array
+          items: { $ref: '#/components/schemas/InlineSegment' }
+        attribution: { $ref: '#/components/schemas/Attribution' }
+      required: [id, kind, blockType]
+    SemanticDiff:
+      type: object
+      properties:
+        documentPath: { type: string }
+        blocks:
+          type: array
+          items: { $ref: '#/components/schemas/SemanticDiffBlock' }
+        summary:
+          type: object
+          properties:
+            added: { type: integer }
+            removed: { type: integer }
+            modified: { type: integer }
+          required: [added, removed, modified]
+      required: [documentPath, blocks, summary]
+    AffectedAgent:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        purpose: { type: string }
+        severity: { $ref: '#/components/schemas/BlastSeverity' }
+        reason: { type: string }
+      required: [id, name, purpose, severity, reason]
+    BlastRadius:
+      type: object
+      properties:
+        agents:
+          type: array
+          items: { $ref: '#/components/schemas/AffectedAgent' }
+        maxSeverity: { $ref: '#/components/schemas/BlastSeverity' }
+      required: [agents, maxSeverity]
+    Reviewer:
+      type: object
+      properties:
+        author: { $ref: '#/components/schemas/Author' }
+        decision: { type: string, enum: [pending, approved, changes_requested] }
+        required: { type: boolean }
+        decidedAt: { type: string, format: date-time }
+      required: [author, decision, required]
+    ContextPR:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        status: { $ref: '#/components/schemas/PrStatus' }
+        origin: { $ref: '#/components/schemas/PrOrigin' }
+        author: { $ref: '#/components/schemas/Author' }
+        documentPath: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        reviewers:
+          type: array
+          items: { $ref: '#/components/schemas/Reviewer' }
+        diff: { $ref: '#/components/schemas/SemanticDiff' }
+        blastRadius: { $ref: '#/components/schemas/BlastRadius' }
+      required: [id, title, description, status, origin, author, documentPath, createdAt, updatedAt, reviewers, diff, blastRadius]
+    ContextPrSummary:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        status: { $ref: '#/components/schemas/PrStatus' }
+        origin: { $ref: '#/components/schemas/PrOrigin' }
+        author: { $ref: '#/components/schemas/Author' }
+        documentPath: { type: string }
+        updatedAt: { type: string, format: date-time }
+        blastMaxSeverity: { $ref: '#/components/schemas/BlastSeverity' }
+        affectedAgents: { type: integer }
+      required: [id, title, status, origin, author, documentPath, updatedAt, blastMaxSeverity, affectedAgents]
+    ApprovalRequestBody:
+      type: object
+      properties:
+        action: { type: string, enum: [approve, request_changes, reject] }
+        comment: { type: string }
+        blastRadiusAcknowledged: { type: boolean }
+      required: [action]
+    ApprovalResponse:
+      type: object
+      properties:
+        pr: { $ref: '#/components/schemas/ContextPR' }
+        merged: { type: boolean }
+      required: [pr, merged]
+    AgentSubmitRequestBody:
+      type: object
+      properties:
+        documentPath: { type: string }
+        title: { type: string }
+        description: { type: string }
+        proposedContent: { type: string }
+      required: [documentPath, title, description, proposedContent]
+    AgentSubmitResponse:
+      type: object
+      properties:
+        prId: { type: string }
+        status: { $ref: '#/components/schemas/PrStatus' }
+      required: [prId, status]
+    FreshnessState:
+      type: string
+      enum: [fresh, stale, expired, conflicted]
+    BlockFreshness:
+      type: object
+      properties:
+        documentPath: { type: string }
+        blockKey: { type: string }
+        text: { type: string }
+        state: { $ref: '#/components/schemas/FreshnessState' }
+        lastReviewedAt: { type: string, format: date-time }
+        ttlDays: { type: integer }
+        staleAt: { type: string, format: date-time }
+      required: [documentPath, blockKey, text, state, lastReviewedAt, ttlDays, staleAt]
+    FreshnessOverview:
+      type: object
+      properties:
+        counts:
+          type: object
+          properties:
+            fresh: { type: integer }
+            stale: { type: integer }
+            expired: { type: integer }
+            conflicted: { type: integer }
+          required: [fresh, stale, expired, conflicted]
+        attention:
+          type: array
+          items: { $ref: '#/components/schemas/BlockFreshness' }
+        total: { type: integer }
+      required: [counts, attention, total]
+    ReviewTicket:
+      type: object
+      properties:
+        id: { type: string }
+        documentPath: { type: string }
+        blockKey: { type: string }
+        blockText: { type: string }
+        reason: { type: string }
+        state: { type: string, enum: [open, resolved] }
+        createdAt: { type: string, format: date-time }
+        assignee: { $ref: '#/components/schemas/Author' }
+      required: [id, documentPath, blockKey, blockText, reason, state, createdAt]
+    DocumentView:
+      type: object
+      properties:
+        documentPath: { type: string }
+        content: { type: string }
+        attributions:
+          type: array
+          items:
+            type: object
+            properties:
+              blockKey: { type: string }
+              attribution: { $ref: '#/components/schemas/Attribution' }
+            required: [blockKey]
+        draftPrId: { type: string }
+      required: [documentPath, content, attributions]
+    AutosaveRequestBody:
+      type: object
+      properties:
+        documentPath: { type: string }
+        content: { type: string }
+        authorId: { type: string }
+      required: [documentPath, content, authorId]
+    AutosaveResponse:
+      type: object
+      properties:
+        draftPrId: { type: string }
+        savedAt: { type: string, format: date-time }
+      required: [draftPrId, savedAt]
+    ProposeRequestBody:
+      type: object
+      properties:
+        draftPrId: { type: string }
+        title: { type: string }
+        description: { type: string }
+      required: [draftPrId, title, description]
+    EvalResult:
+      type: object
+      properties:
+        id: { type: string }
+        agentId: { type: string }
+        question: { type: string }
+        passed: { type: boolean }
+        missing: { type: array, items: { type: string } }
+        forbidden: { type: array, items: { type: string } }
+      required: [id, agentId, passed, missing, forbidden]
+    EvalReport:
+      type: object
+      properties:
+        passed: { type: boolean }
+        results:
+          type: array
+          items: { $ref: '#/components/schemas/EvalResult' }
+      required: [passed, results]
+    DistributionAgentSlice:
+      type: object
+      properties:
+        agentId: { type: string }
+        agentName: { type: string }
+        documents: { type: array, items: { type: string } }
+        files: { type: integer }
+        bytes: { type: integer }
+      required: [agentId, agentName, documents, files, bytes]
+    DistributionStatus:
+      type: object
+      properties:
+        published: { type: boolean }
+        version: { type: string }
+        generatedAt: { type: string, format: date-time }
+        publicKeyPem: { type: string }
+        agents:
+          type: array
+          items: { $ref: '#/components/schemas/DistributionAgentSlice' }
+      required: [published, agents]
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Liveness check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { ok: { type: boolean } }
+
+  /api/context/auth/config:
+    get:
+      tags: [Auth]
+      summary: Available login methods
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AuthConfig' } } } }
+  /api/context/auth/users:
+    get:
+      tags: [Auth]
+      summary: Pick-user list (dev fallback)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/SessionUser' } } } } }
+        '403': { description: Disabled, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+  /api/context/auth/login:
+    post:
+      tags: [Auth]
+      summary: Dev/local login
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, properties: { authorId: { type: string } }, required: [authorId] } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/LoginResponse' } } } }
+        '403': { description: Disabled }
+        '404': { description: Unknown user }
+  /api/context/auth/me:
+    get:
+      tags: [Auth]
+      summary: Resolve the current session
+      security: [{ sessionAuth: [] }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, properties: { user: { $ref: '#/components/schemas/SessionUser' } } } } } }
+        '401': { description: Not authenticated }
+  /api/context/auth/google/login:
+    get:
+      tags: [Auth]
+      summary: Start Google SSO
+      responses:
+        '302': { description: Redirect to Google }
+        '404': { description: SSO not configured }
+  /api/context/auth/google/callback:
+    get:
+      tags: [Auth]
+      summary: Google SSO callback
+      parameters:
+        - { name: code, in: query, schema: { type: string } }
+        - { name: state, in: query, schema: { type: string } }
+      responses:
+        '302': { description: Redirect to web app with session token }
+
+  /api/context/workspace:
+    get:
+      tags: [Workspace]
+      summary: Current workspace binding
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/WorkspaceInfo' } } } }
+    post:
+      tags: [Workspace]
+      summary: Bind to an external context store (owner)
+      security: [{ sessionAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ConfigureWorkspaceBody' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/WorkspaceInfo' } } } }
+        '401': { description: Auth required }
+        '403': { description: Forbidden }
+        '422': { description: Could not bind }
+
+  /api/context/pr:
+    get:
+      tags: [Context PRs]
+      summary: List change requests
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/ContextPrSummary' } } } } }
+  /api/context/pr/{id}:
+    get:
+      tags: [Context PRs]
+      summary: Get a change request
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ContextPR' } } } }
+        '404': { description: Not found }
+  /api/context/pr/{id}/evals:
+    get:
+      tags: [Context PRs]
+      summary: Run regression evals for the proposed change
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/EvalReport' } } } }
+  /api/context/pr/{id}/approve:
+    post:
+      tags: [Context PRs]
+      summary: Approve / request changes / reject (reviewer)
+      security: [{ sessionAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ApprovalRequestBody' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ApprovalResponse' } } } }
+        '401': { description: Auth required }
+        '403': { description: Not a reviewer / wrong role }
+        '404': { description: Not found }
+        '409': { description: Blast-ack required or evals failed, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+  /api/context/pr/agent-submit:
+    post:
+      tags: [Context PRs]
+      summary: Agent opens a change request
+      security: [{ agentKey: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AgentSubmitRequestBody' } } }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/AgentSubmitResponse' } } } }
+        '401': { description: Agent key required }
+        '403': { description: Key not bound to a known agent }
+
+  /api/context/governance/freshness:
+    get:
+      tags: [Governance]
+      summary: Block freshness overview
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/FreshnessOverview' } } } }
+  /api/context/governance/tickets:
+    get:
+      tags: [Governance]
+      summary: Open review tickets
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/ReviewTicket' } } } } }
+
+  /api/context/doc/view:
+    get:
+      tags: [Editing]
+      summary: Document content + attribution + open draft
+      parameters:
+        - { name: path, in: query, required: true, schema: { type: string } }
+        - { name: as, in: query, schema: { type: string } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/DocumentView' } } } }
+        '404': { description: Not found }
+  /api/context/doc/autosave:
+    post:
+      tags: [Editing]
+      summary: Transparent autosave to a draft branch (reviewer+)
+      security: [{ sessionAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AutosaveRequestBody' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AutosaveResponse' } } } }
+        '401': { description: Auth required }
+        '403': { description: Forbidden }
+  /api/context/doc/propose:
+    post:
+      tags: [Editing]
+      summary: Promote a draft to an in-review Context PR (reviewer+)
+      security: [{ sessionAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ProposeRequestBody' } } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, properties: { prId: { type: string } }, required: [prId] } } } }
+        '401': { description: Auth required }
+        '403': { description: Forbidden }
+
+  /api/context/export/llms.txt:
+    get:
+      tags: [Export]
+      summary: Concatenated agent-friendly context
+      responses:
+        '200': { description: OK, content: { text/plain: { schema: { type: string } } } }
+  /api/context/export/fcontext:
+    get:
+      tags: [Export]
+      summary: .fcontext manifest (per-block attribution + freshness)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object } } } }
+  /api/context/export/ledger.csv:
+    get:
+      tags: [Export]
+      summary: Change-request ledger as CSV
+      responses:
+        '200': { description: OK, content: { text/csv: { schema: { type: string } } } }
+
+  /api/context/distribution:
+    get:
+      tags: [Distribution]
+      summary: Current published bundle status
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/DistributionStatus' } } } }
+  /api/context/distribution/publish:
+    post:
+      tags: [Distribution]
+      summary: Re-render + sign + publish per-agent slices (owner)
+      security: [{ sessionAuth: [] }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/DistributionStatus' } } } }
+        '401': { description: Auth required }
+        '403': { description: Forbidden }
