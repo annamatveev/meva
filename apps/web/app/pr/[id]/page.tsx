@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getContextPr } from "@/lib/api";
+import { DEMO_PR_IDS } from "@/lib/demo";
 import { PRHeader } from "@/components/cpr/PRHeader";
 import { SemanticDiff } from "@/components/cpr/SemanticDiff";
 import { BlastRadius } from "@/components/cpr/BlastRadius";
@@ -8,9 +9,9 @@ import { ApprovalPanel } from "@/components/cpr/ApprovalPanel";
 
 export const dynamic = process.env.STATIC_EXPORT === "1" ? "force-static" : "force-dynamic";
 
-// For the static (GitHub Pages) demo, pre-render the sample CPR.
+// For the static (GitHub Pages) demo, pre-render every CPR the UI links to.
 export function generateStaticParams() {
-  return process.env.STATIC_EXPORT === "1" ? [{ id: "pr-001" }] : [];
+  return process.env.STATIC_EXPORT === "1" ? DEMO_PR_IDS.map((id) => ({ id })) : [];
 }
 
 export default async function ContextPrPage({

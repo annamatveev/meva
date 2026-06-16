@@ -120,6 +120,68 @@ const PR_000: ContextPrSummary = {
   affectedAgents: 0,
 };
 
+// Full CPRs for the other dashboard rows, so their pages render (static export
+// must pre-render every linked PR — there's no server to render on demand).
+const PR_AGENT_FULL: ContextPR = {
+  id: "pr-agent-x1",
+  title: PR_AGENT.title,
+  description:
+    "The agent found that when a card refund fails, support issues store credit — proposing to document the fallback.",
+  status: "in_review",
+  origin: "agent",
+  author: { id: "agent-refunds", kind: "agent", name: "Refund Resolution Agent" },
+  documentPath: DOC,
+  createdAt: ago(0.2),
+  updatedAt: ago(0.2),
+  reviewers: [
+    { author: { id: OWNER.id, kind: "human", name: OWNER.name }, decision: "pending", required: true },
+  ],
+  diff: {
+    documentPath: DOC,
+    summary: { added: 1, removed: 0, modified: 0 },
+    blocks: [
+      { id: "a1", kind: "unchanged", blockType: "paragraph", after: "Refunds are issued to the original payment method within 5 business days." },
+      { id: "a2", kind: "added", blockType: "paragraph", after: "If the card refund fails, support issues store credit of equal value." },
+    ],
+  },
+  blastRadius: {
+    maxSeverity: "medium",
+    agents: [
+      { id: "agent-refunds", name: "Refund Resolution Agent", purpose: "Decides customer refund eligibility and amounts.", severity: "medium", reason: "Adds refund-failure handling." },
+      { id: "agent-billing", name: "Billing Reconciliation Agent", purpose: "Reconciles invoices and applies credits.", severity: "medium", reason: "Mentions store credit." },
+    ],
+  },
+};
+
+const PR_000_FULL: ContextPR = {
+  id: "pr-000",
+  title: "Establish refund policy",
+  description: "Initial authoritative refund policy.",
+  status: "merged",
+  origin: "ui",
+  author: { id: OWNER.id, kind: "human", name: OWNER.name, role: OWNER.role },
+  documentPath: DOC,
+  createdAt: ago(75),
+  updatedAt: ago(75),
+  reviewers: [
+    { author: { id: OWNER.id, kind: "human", name: OWNER.name }, decision: "approved", required: true, decidedAt: ago(75) },
+  ],
+  diff: {
+    documentPath: DOC,
+    summary: { added: 0, removed: 0, modified: 0 },
+    blocks: [
+      { id: "z1", kind: "unchanged", blockType: "heading", depth: 1, after: "Refund Policy" },
+      { id: "z2", kind: "unchanged", blockType: "paragraph", after: "Customers may request a refund through the support portal or by email." },
+      { id: "z3", kind: "unchanged", blockType: "heading", depth: 2, after: "Refund Windows" },
+      { id: "z4", kind: "unchanged", blockType: "paragraph", after: "Standard purchases are refundable within 30 days of delivery." },
+    ],
+  },
+  blastRadius: { maxSeverity: "low", agents: [] },
+};
+
+/** Every PR id the demo can link to — must all be pre-rendered for Pages. */
+export const DEMO_PR_IDS = ["pr-001", "pr-agent-x1", "pr-000"];
+
 const FRESHNESS: FreshnessOverview = {
   total: 10,
   counts: { fresh: 8, stale: 1, expired: 1, conflicted: 0 },
@@ -194,7 +256,8 @@ const EVALS: EvalReport = {
 
 /** Demo implementations matching the api client signatures. */
 export const demo = {
-  getContextPr: async (id: string): Promise<ContextPR | null> => (id === "pr-001" ? PR_001 : null),
+  getContextPr: async (id: string): Promise<ContextPR | null> =>
+    id === "pr-001" ? PR_001 : id === "pr-agent-x1" ? PR_AGENT_FULL : id === "pr-000" ? PR_000_FULL : null,
   listContextPrs: async (): Promise<ContextPrSummary[]> => [PR_AGENT, summarize(PR_001), PR_000],
   getFreshnessOverview: async (): Promise<FreshnessOverview> => FRESHNESS,
   listTickets: async (): Promise<ReviewTicket[]> => TICKETS,
