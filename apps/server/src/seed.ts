@@ -89,6 +89,8 @@ Refunds above $500 require a second approver before they are issued.
 
 async function resetDb() {
   // Order matters for FK constraints.
+  await db.reviewTicket.deleteMany();
+  await db.blockFreshness.deleteMany();
   await db.attributionEntry.deleteMany();
   await db.blastEntry.deleteMany();
   await db.reviewer.deleteMany();
@@ -135,17 +137,46 @@ async function main() {
     },
   });
 
-  // Attribution index for every baseline block → pr-000 / Dana.
+  // Attribution index + freshness for every baseline block → pr-000 / Dana.
+  // Most blocks are fresh; two are intentionally aged so the TTL worker
+  // immediately demonstrates stale/expired transitions and ticket creation.
+  const TTL_DAYS = 90;
+  const FRESH = new Date("2026-04-02T10:00:00Z"); // staleAt ~2026-07-01 → fresh
+  const STALE = new Date("2026-03-08T10:00:00Z"); // staleAt ~2026-06-06 → stale
+  const EXPIRED = new Date("2026-01-27T10:00:00Z"); // staleAt+grace past → expired
+
   const baselineDiff = computeSemanticDiff(DOC_PATH, "", BASELINE);
   for (const block of baselineDiff.blocks) {
+    const text = block.after ?? "";
+    const key = blockKey(text);
+
     await db.attributionEntry.create({
       data: {
         documentPath: DOC_PATH,
-        blockKey: blockKey(block.after ?? ""),
-        mergedAt: new Date("2026-04-02T10:00:00Z"),
+        blockKey: key,
+        mergedAt: FRESH,
         prId: "pr-000",
         prTitle: "Establish refund policy",
         authorId: OWNER.id,
+      },
+    });
+
+    const reviewedAt = text.includes("Digital goods")
+      ? STALE
+      : text.includes("5 business days")
+        ? EXPIRED
+        : FRESH;
+    const staleAt = new Date(reviewedAt.getTime() + TTL_DAYS * 86_400_000);
+
+    await db.blockFreshness.create({
+      data: {
+        documentPath: DOC_PATH,
+        blockKey: key,
+        text: text.slice(0, 240),
+        state: "fresh", // the worker recomputes from staleAt on its first tick
+        lastReviewedAt: reviewedAt,
+        ttlDays: TTL_DAYS,
+        staleAt,
       },
     });
   }

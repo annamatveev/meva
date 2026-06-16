@@ -1,4 +1,9 @@
-import type { Author, BlastSeverity, PrStatus } from "@context-studio/types";
+import type {
+  Author,
+  BlastSeverity,
+  FreshnessState,
+  PrStatus,
+} from "@context-studio/types";
 
 /** A small chip distinguishing human vs agent authorship. */
 export function AuthorBadge({ author, className = "" }: { author: Author; className?: string }) {
@@ -45,6 +50,24 @@ export function StatusBadge({ status }: { status: PrStatus }) {
   const s = STATUS_LABEL[status];
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${s.className}`}>
+      {s.label}
+    </span>
+  );
+}
+
+const FRESHNESS_STYLE: Record<FreshnessState, { label: string; className: string }> = {
+  fresh: { label: "Fresh", className: "bg-emerald-50 text-emerald-700 ring-emerald-600/20" },
+  stale: { label: "Stale", className: "bg-amber-50 text-amber-700 ring-amber-600/20" },
+  expired: { label: "Expired", className: "bg-rose-50 text-rose-700 ring-rose-600/20" },
+  conflicted: { label: "Conflicted", className: "bg-fuchsia-50 text-fuchsia-700 ring-fuchsia-600/20" },
+};
+
+export function FreshnessPill({ state }: { state: FreshnessState }) {
+  const s = FRESHNESS_STYLE[state];
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${s.className}`}
+    >
       {s.label}
     </span>
   );

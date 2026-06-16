@@ -194,6 +194,89 @@ export interface AgentSubmitResponse {
   status: PrStatus;
 }
 
+/** Compact PR record for the change-request dashboard list. */
+export interface ContextPrSummary {
+  id: string;
+  title: string;
+  status: PrStatus;
+  origin: PrOrigin;
+  author: Author;
+  documentPath: string;
+  updatedAt: string;
+  blastMaxSeverity: BlastSeverity;
+  affectedAgents: number;
+}
+
+// ---------------------------------------------------------------------------
+// Freshness & governance (Module 4)
+// ---------------------------------------------------------------------------
+
+/** Per-block freshness record tracked by the governance state machine. */
+export interface BlockFreshness {
+  documentPath: string;
+  blockKey: string;
+  /** Short preview of the block text, for governance lists. */
+  text: string;
+  state: FreshnessState;
+  lastReviewedAt: string;
+  ttlDays: number;
+  staleAt: string;
+}
+
+export interface FreshnessOverview {
+  counts: Record<FreshnessState, number>;
+  /** Blocks needing attention (stale / expired / conflicted), worst first. */
+  attention: BlockFreshness[];
+  total: number;
+}
+
+export type TicketState = "open" | "resolved";
+
+/** A review ticket auto-opened when a block goes stale (or conflicted). */
+export interface ReviewTicket {
+  id: string;
+  documentPath: string;
+  blockKey: string;
+  blockText: string;
+  reason: string;
+  state: TicketState;
+  createdAt: string;
+  /** The Context Owner the ticket is routed to, if assigned. */
+  assignee?: Author;
+}
+
+// ---------------------------------------------------------------------------
+// Editing (Module 3)
+// ---------------------------------------------------------------------------
+
+/** Live document view for the dual-mode editor (content + per-block attribution). */
+export interface DocumentView {
+  documentPath: string;
+  /** Current authoritative (main) content. */
+  content: string;
+  /** Attribution per logical block, aligned to the rendered blocks. */
+  attributions: Array<{ blockKey: string; attribution?: Attribution }>;
+  /** Draft PR currently open for this document by the acting user, if any. */
+  draftPrId?: string;
+}
+
+export interface AutosaveRequestBody {
+  documentPath: string;
+  content: string;
+  authorId: string;
+}
+
+export interface AutosaveResponse {
+  draftPrId: string;
+  savedAt: string;
+}
+
+export interface ProposeRequestBody {
+  draftPrId: string;
+  title: string;
+  description: string;
+}
+
 export type ApprovalAction = "approve" | "request_changes" | "reject";
 
 export interface ApprovalRequestBody {

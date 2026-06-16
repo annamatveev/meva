@@ -110,6 +110,16 @@ export class GitService {
     }
   }
 
+  /** List every document path tracked on a branch (default main). */
+  async listDocuments(branch: string = MAIN_BRANCH): Promise<string[]> {
+    try {
+      const out = await this.git.raw(["ls-tree", "-r", "--name-only", branch]);
+      return out.split("\n").map((s) => s.trim()).filter(Boolean);
+    } catch {
+      return [];
+    }
+  }
+
   /**
    * Transparent autosave: ensure the PR's draft branch exists (creating it from
    * main on first edit — the equivalent of `git checkout -b`), write the new

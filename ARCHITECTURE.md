@@ -45,23 +45,28 @@ Translates UI verbs into raw Git:
 - approving a draft → **squash-merge** all autosaves into one semantic commit on
   `main`, then delete the draft branch.
 
-### 2. Context Pull Request (CPR) UI — `apps/web/app/pr/[id]` *(this deliverable)*
+### 2. Context Pull Request (CPR) UI — `apps/web/app/pr/[id]`
 - **Semantic Diff** viewer: block-level add/modify/remove, wiki-style, no red/green soup.
 - **Blast Radius** warning: which agents are affected, severity-ranked, gates the merge.
 - **Approval routing**: required reviewers, decisions, merge button.
 - `POST /api/context/pr/agent-submit`: lets autonomous agents open CPRs when they
   discover workarounds or edge cases.
 
-### 3. Dual-Mode Editor & Attribution Gutter — *(future)*
-- Rich-text/Markdown editor for drafting policies.
-- **Attribution Gutter**: hover a sentence → who wrote it (human/agent), when, and
+### 3. Dual-Mode Editor & Attribution Gutter — `apps/web/app/edit/[...path]`
+- Markdown editor with a **write / preview** toggle for drafting policies.
+- Editing is transparent: autosave opens/updates a hidden `draft` Context PR via
+  `DocService` + `GitService`; "Propose change" promotes it to `in_review`.
+- **Attribution Gutter**: hover a block → who wrote it (human/agent), when, and
   the CPR that merged it. A non-technical `git blame`.
-- Export to machine-readable `.fcontext/` directories and `llms.txt`.
+- Export to machine-readable `llms.txt` and a `.fcontext` manifest
+  (`ExportService`), pairing each block with its attribution and freshness.
 
-### 4. Freshness & Governance State Machine — *(future)*
-- Every block tracks `fresh | stale | expired | conflicted`.
-- A background worker flags blocks `stale` past their configurable TTL and opens a
-  review ticket for the Context Owner automatically.
+### 4. Freshness & Governance State Machine — `apps/server/src/services/FreshnessService.ts`
+- Every block tracks `fresh | stale | expired | conflicted` in `BlockFreshness`.
+- A background **TTL worker** (`worker.ts`) flags blocks past their configurable
+  review window and auto-opens a review ticket routed to the Context Owner.
+- Blocks touched by two or more open CPRs are marked `conflicted`.
+- Surfaced at `apps/web/app/governance`.
 
 ## Tech stack
 
@@ -82,10 +87,15 @@ pnpm seed          # initializes .context-repo/ as a real Git repo + sample CPR
 pnpm dev           # server on :4000, web on :3000
 ```
 
-Open http://localhost:3000/pr/pr-001 for the CPR review screen.
+Then:
+- `/` — change-request dashboard
+- `/pr/pr-001` — CPR review screen (Semantic Diff, Blast Radius, approval)
+- `/edit/policies/refunds.md` — dual-mode editor + attribution gutter + export
+- `/governance` — freshness state machine + auto-opened review tickets
 
 ## Current status
 
-Module 2 (CPR review screen) is implemented end-to-end against a seeded sample
-CPR backed by a real on-disk Git repo. Modules 1, 3 and 4 are scaffolded at the
-type and architecture level and grow from here.
+All four modules are implemented end-to-end against a seeded sample backed by a
+real on-disk Git repo: the abstracted version-control backend (1), the CPR review
+screen (2), the dual-mode editor with attribution + export (3), and the freshness
+governance state machine with its TTL worker (4).

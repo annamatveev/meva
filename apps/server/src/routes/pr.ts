@@ -23,6 +23,16 @@ export function createPrRouter(git: GitService): Router {
   const router = Router();
   const prs = new PrService(git);
 
+  // --- List CPRs (dashboard) --------------------------------------------
+  router.get("/", async (_req, res) => {
+    try {
+      res.json(await prs.listContextPrs());
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to list Context PRs." });
+    }
+  });
+
   // --- Read a CPR --------------------------------------------------------
   router.get("/:id", async (req, res) => {
     try {

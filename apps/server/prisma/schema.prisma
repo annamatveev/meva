@@ -69,6 +69,35 @@ model BlastEntry {
   prId String
 }
 
+// Per-block freshness, tracked by the governance state machine (Module 4).
+model BlockFreshness {
+  id             String   @id @default(cuid())
+  documentPath   String
+  blockKey       String
+  text           String
+  state          String // FreshnessState: fresh | stale | expired | conflicted
+  lastReviewedAt DateTime
+  ttlDays        Int
+  staleAt        DateTime
+
+  @@unique([documentPath, blockKey])
+}
+
+// A review ticket auto-opened by the TTL worker when a block goes stale, or by
+// the conflict detector when two open PRs touch the same block.
+model ReviewTicket {
+  id           String   @id @default(cuid())
+  documentPath String
+  blockKey     String
+  blockText    String
+  reason       String
+  state        String   @default("open") // open | resolved
+  createdAt    DateTime @default(now())
+  assigneeId   String?
+
+  @@unique([documentPath, blockKey, reason])
+}
+
 // The attribution index: maps a normalized block of text within a document to
 // the author + PR that merged it. Powers the non-technical "Attribution Gutter".
 model AttributionEntry {

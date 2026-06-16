@@ -14,11 +14,13 @@ import type {
   BlastRadius,
   BlastSeverity,
   ContextPR,
+  ContextPrSummary,
   PrStatus,
   Reviewer,
   SemanticDiffBlock,
 } from "@context-studio/types";
 import { db } from "../lib/db.js";
+import { DEFAULT_TTL_DAYS } from "../lib/config.js";
 import { GitService, MAIN_BRANCH } from "./GitService.js";
 import { blockKey, computeSemanticDiff } from "./SemanticDiffService.js";
 
@@ -33,6 +35,33 @@ export class MergeBlockedError extends Error {}
 
 export class PrService {
   constructor(private readonly git: GitService) {}
+
+  /** Compact list for the change-request dashboard. */
+  async listContextPrs(): Promise<ContextPrSummary[]> {
+    const prs = await db.pr.findMany({
+      include: { author: true, blastEntries: true },
+      orderBy: { updatedAt: "desc" },
+    });
+    return prs.map((pr): ContextPrSummary => {
+      const blast = this.toBlastRadius(pr.blastEntries);
+      return {
+        id: pr.id,
+        title: pr.title,
+        status: pr.status as PrStatus,
+        origin: pr.origin as "ui" | "agent",
+        author: {
+          id: pr.author.id,
+          kind: pr.author.kind as "human" | "agent",
+          name: pr.author.name,
+          role: pr.author.role ?? undefined,
+        },
+        documentPath: pr.documentPath,
+        updatedAt: pr.updatedAt.toISOString(),
+        blastMaxSeverity: blast.maxSeverity,
+        affectedAgents: blast.agents.length,
+      };
+    });
+  }
 
   /** Build the full domain object the CPR review screen renders. */
   async getContextPr(prId: string): Promise<ContextPR> {
@@ -259,6 +288,8 @@ export class PrService {
     const diff = computeSemanticDiff(documentPath, "", merged); // all "added"
     const now = new Date();
 
+    const staleAt = new Date(now.getTime() + DEFAULT_TTL_DAYS * 86_400_000);
+
     for (const block of diff.blocks) {
       const text = block.after ?? "";
       const key = blockKey(text);
@@ -275,6 +306,33 @@ export class PrService {
           prTitle,
           authorId,
         },
+      });
+
+      // A merged block is freshly reviewed; (re)start its TTL clock.
+      await db.blockFreshness.upsert({
+        where: { documentPath_blockKey: { documentPath, blockKey: key } },
+        update: {
+          text: text.slice(0, 240),
+          state: "fresh",
+          lastReviewedAt: now,
+          ttlDays: DEFAULT_TTL_DAYS,
+          staleAt,
+        },
+        create: {
+          documentPath,
+          blockKey: key,
+          text: text.slice(0, 240),
+          state: "fresh",
+          lastReviewedAt: now,
+          ttlDays: DEFAULT_TTL_DAYS,
+          staleAt,
+        },
+      });
+
+      // Any open stale/conflict ticket for this block is now resolved.
+      await db.reviewTicket.updateMany({
+        where: { documentPath, blockKey: key, state: "open" },
+        data: { state: "resolved" },
       });
     }
   }

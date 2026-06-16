@@ -9,20 +9,33 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for the design and the four-module plan
 
 ## What's built
 
-This prototype implements **Module 2 — the Context Pull Request (CPR) review
-screen** end-to-end against a real on-disk Git repo:
+All four modules are implemented end-to-end against a real on-disk Git repo:
 
+**Module 1 — Abstracted version control.** `GitService` is the only code that
+touches Git: editing transparently creates a draft branch; approving squash-merges
+every autosave into one semantic commit on `main` and deletes the branch.
+
+**Module 2 — Context PR review screen** (`/pr/pr-001`):
 - **Semantic Diff** — block-level add/edit/remove rendered like a collaborative
   wiki (no red/green line gutters), with word-level emphasis inside edits.
 - **Attribution Gutter** — hover any line to see who wrote it (human or agent),
   when, and which change request introduced it.
 - **Blast Radius** — which autonomous agents are affected, severity-ranked; the
   highest severity gates the merge button.
-- **Approval routing** — required reviewers, decisions, and a squash-merge on
-  approval (all autosaves collapse into one semantic commit on `main`).
+- **Approval routing** — required reviewers, decisions, squash-merge on approval.
 - **Agent API** — `POST /api/context/pr/agent-submit` lets agents open CPRs.
 
-Modules 1, 3 and 4 are scaffolded at the type/architecture level.
+**Module 3 — Dual-mode editor** (`/edit/policies/refunds.md`):
+- Markdown **write / preview** editor; edits autosave to a hidden draft PR and
+  "Propose change" opens a CPR.
+- Live **attribution gutter** in preview.
+- Export to **`llms.txt`** and a **`.fcontext`** manifest for AI consumption.
+
+**Module 4 — Freshness & governance** (`/governance`):
+- Every block tracks `fresh | stale | expired | conflicted`.
+- A background **TTL worker** flags blocks past their review window and
+  auto-opens a review ticket routed to the Context Owner.
+- A change-request **dashboard** at `/` lists all CPRs with a governance snapshot.
 
 ## Prerequisites
 
