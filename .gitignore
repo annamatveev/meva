@@ -28,3 +28,6 @@ apps/server/.workspaces/
 # Published distribution bundles + signing keys (never commit the private key)
 apps/server/.dist/
 apps/server/.signing/
+
+# Recorded demo video output
+scripts/out/

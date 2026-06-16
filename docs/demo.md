@@ -48,6 +48,26 @@ needed): import the repo, set root to `apps/web`, add that env var, deploy.
 (Because demo mode never calls the backend, the usual constraint — the server
 needs git + a disk — doesn't apply here. That's only for the *real* app.)
 
+## Record a walkthrough video (for the landing page)
+
+`scripts/demo-video.mjs` drives the demo with Playwright and records a clean,
+guided walkthrough (smooth guide-cursor, controlled pacing) — repeatable and
+always in sync with the app.
+
+```bash
+npm i -D playwright
+npx playwright install chromium
+node scripts/demo-video.mjs                 # records the live Pages demo
+# DEMO_URL=http://localhost:3000 node scripts/demo-video.mjs   # local demo
+```
+
+Output: `scripts/out/meva-demo.webm` (+ `meva-demo.mp4` if `ffmpeg` is
+installed). Embed on the landing with:
+
+```html
+<video src="/meva-demo.mp4" autoplay muted loop playsinline></video>
+```
+
 ## What's mocked
 
 Reads return fixtures (a sample refund-policy CPR with a semantic diff + blast
