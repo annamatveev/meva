@@ -46,7 +46,10 @@ export class HealthService {
     const missing = SAMPLE_MISSING;
     const totalMisses = missing.reduce((s, m) => s + m.misses, 0);
 
-    return { periodDays: 30, totalReads, totalMisses, sample: true, hot, cold, missing };
+    // Deterministic sample trend (reads/day) so the sparkline is stable.
+    const trend = Array.from({ length: 14 }, (_, i) => 30 + ((i * 37 + totalReads) % 60));
+
+    return { periodDays: 30, totalReads, totalMisses, sample: true, trend, hot, cold, missing };
   }
 }
 

@@ -49,8 +49,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <NavLink href="/" hint="The agent health dashboard — what your agents read, ignore, and can't find.">
                   Dashboard
                 </NavLink>
-                <NavLink href="/queue" hint="Things that need you — change requests, review tickets, gaps, and unread areas, filterable.">
-                  Queue
+                <NavLink href="/inbox" hint="Things that need you — change requests, review tickets, gaps, and unread areas, filterable.">
+                  Inbox
                 </NavLink>
                 <NavLink href="/edit/policies/refunds.md" hint="Browse and edit the workspace's Markdown. Edits autosave privately until you propose them.">
                   Editor

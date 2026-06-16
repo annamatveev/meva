@@ -9,6 +9,7 @@
 
 import type {
   AuthConfig,
+  Confidence,
   ContextPR,
   ContextPrSummary,
   DistributionStatus,
@@ -265,13 +266,14 @@ Refunds are issued to the original payment method within 5 business days.
 Disputed refunds are escalated to a human Support lead for review.
 `;
 
-// Files across the typed sources. `agentLines` marks blocks an agent wrote
-// (lower confidence — review me); everything else is human-authored (trusted).
-const DOCS: Record<string, { kind: SourceKind; content: string; agentLines: string[] }> = {
+// Files across the typed sources. `marks` records agent-authored blocks and
+// their confidence; everything else is human-written (trusted).
+type AgentConfidence = "agent_approved" | "agent_unverified";
+const DOCS: Record<string, { kind: SourceKind; content: string; marks?: Record<string, AgentConfidence> }> = {
   "policies/refunds.md": {
     kind: "context",
     content: DOC_CONTENT,
-    agentLines: ["Digital goods are refundable within 14 days of purchase."],
+    marks: { "Digital goods are refundable within 14 days of purchase.": "agent_approved" },
   },
   "policies/shipping.md": {
     kind: "context",
@@ -283,7 +285,7 @@ Standard delivery takes 3–5 business days.
 
 International orders may take 10–14 business days and can incur customs fees.
 `,
-    agentLines: ["International orders may take 10–14 business days and can incur customs fees."],
+    marks: { "International orders may take 10–14 business days and can incur customs fees.": "agent_unverified" },
   },
   "skills/issue-refund.md": {
     kind: "skills",
@@ -297,7 +299,7 @@ Confirm eligibility against the refund policy.
 
 Issue the refund to the original payment method.
 `,
-    agentLines: ["Confirm eligibility against the refund policy."],
+    marks: { "Confirm eligibility against the refund policy.": "agent_approved" },
   },
   "skills/lookup-order.md": {
     kind: "skills",
@@ -307,7 +309,6 @@ Issue the refund to the original payment method.
 
 Search by customer email, then narrow by order ID or date.
 `,
-    agentLines: [],
   },
   "memory/known-edge-cases.md": {
     kind: "memory",
@@ -317,7 +318,7 @@ Gift-card purchases are non-refundable.
 
 Bundled items must be returned together to qualify.
 `,
-    agentLines: ["Bundled items must be returned together to qualify."],
+    marks: { "Bundled items must be returned together to qualify.": "agent_unverified" },
   },
 };
 
@@ -337,6 +338,7 @@ const HEALTH: HealthOverview = {
   totalReads: 1284,
   totalMisses: 41,
   sample: true,
+  trend: [28, 34, 31, 40, 38, 52, 47, 55, 49, 63, 58, 71, 66, 74],
   hot: [
     { path: "policies/refunds.md › Refund Windows", kind: "context", reads: 372, lastReadAt: ago(0.2), freshness: "fresh" },
     { path: "policies/refunds.md › Eligibility", kind: "context", reads: 248, lastReadAt: ago(0.5), freshness: "fresh" },
@@ -372,16 +374,18 @@ export const demo = {
   getDocumentView: async (path: string): Promise<DocumentView> => {
     const entry = DOCS[path] ?? DOCS["policies/refunds.md"]!;
     const attributions = parseBlocks(entry.content).map((b) => {
-      const isAgent = entry.agentLines.some((l) => l === b.text);
+      const conf: Confidence = entry.marks?.[b.text] ?? "human";
+      const isAgent = conf !== "human";
       return {
         blockKey: blockKey(b.text),
         attribution: {
           author: isAgent
             ? { id: "agent-refunds", kind: "agent" as const, name: "Refund Resolution Agent" }
             : { id: OWNER.id, kind: "human" as const, name: OWNER.name },
-          mergedAt: ago(isAgent ? 1 : 25),
+          mergedAt: ago(conf === "agent_unverified" ? 0.3 : isAgent ? 8 : 25),
           prId: isAgent ? "pr-agent-x1" : "pr-000",
           prTitle: isAgent ? "Agent: store-credit fallback" : "Establish policy",
+          confidence: conf,
         },
       };
     });

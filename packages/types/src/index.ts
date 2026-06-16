@@ -101,6 +101,14 @@ export interface SemanticDiff {
 // Attribution gutter (Module 3 — non-technical `git blame`)
 // ---------------------------------------------------------------------------
 
+/**
+ * How much to trust a block, by provenance:
+ *  - human         — a human wrote/edited it directly in the editor (highest).
+ *  - agent_approved — an agent authored it and a human approved the merge.
+ *  - agent_unverified — agent-authored, not yet human-approved (lowest).
+ */
+export type Confidence = "human" | "agent_approved" | "agent_unverified";
+
 export interface Attribution {
   author: Author;
   /** ISO timestamp the text was merged into the authoritative state. */
@@ -108,6 +116,7 @@ export interface Attribution {
   /** The Context PR that introduced this text. */
   prId: string;
   prTitle: string;
+  confidence?: Confidence;
 }
 
 // ---------------------------------------------------------------------------
@@ -321,6 +330,8 @@ export interface HealthOverview {
   totalMisses: number;
   /** Whether these numbers are live (MCP) or seeded sample data. */
   sample: boolean;
+  /** Reads per day over the window — for the dashboard sparkline. */
+  trend: number[];
   hot: KnowledgeArea[]; // read a lot
   cold: KnowledgeArea[]; // never / rarely read
   missing: MissingArea[]; // asked, not found

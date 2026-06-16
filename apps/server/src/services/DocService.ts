@@ -53,6 +53,8 @@ export class DocService {
             mergedAt: hit.mergedAt.toISOString(),
             prId: hit.prId,
             prTitle: hit.prTitle,
+            // On main, agent content got here via a human-approved merge.
+            confidence: hit.author.kind === "human" ? "human" : "agent_approved",
           }
         : undefined;
       return { blockKey: key, attribution };

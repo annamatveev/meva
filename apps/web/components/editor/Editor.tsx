@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { Attribution, DocumentView } from "@context-studio/types";
+import type { Attribution, Confidence, DocumentView } from "@context-studio/types";
 import { autosaveDoc, exportUrls, proposeChange } from "@/lib/api";
 import { authHeaders, getSession } from "@/lib/auth";
 import { parseBlocks, blockKey } from "@/lib/blocks";
@@ -12,30 +12,54 @@ import { SourceChip } from "@/components/ui/SourceChip";
 
 type Mode = "write" | "review";
 type SaveState = "idle" | "saving" | "saved" | "error";
-type AnnoType = "comment" | "replace" | "delete";
+type AnnoStyle = "mark" | "strike" | "replace";
 
 interface Anno {
   id: string;
   blockIdx: number;
   quote: string;
-  type: AnnoType;
+  label: string;
+  emoji?: string;
+  color: string;
+  style: AnnoStyle;
   note?: string;
   replacement?: string;
 }
 
-interface FileEntry {
-  path: string;
-  kind: string;
-}
+const C = { indigo: "#5b54e8", rose: "#d2483b", amber: "#e8893b" };
 
-const TYPE_META: Record<AnnoType, { label: string; dot: string; mark: string }> = {
-  comment: { label: "Comment", dot: "var(--type-context)", mark: "bg-indigo-500/15 underline decoration-indigo-500/50 underline-offset-2" },
-  replace: { label: "Replace", dot: "var(--accent)", mark: "bg-amber-500/20" },
-  delete: { label: "Delete", dot: "#d2483b", mark: "bg-rose-500/15 line-through decoration-rose-500/70" },
+// plannotator-style annotation presets.
+const PRESETS: Array<{ label: string; emoji: string; color: string }> = [
+  { label: "Clarify this", emoji: "❓", color: "#e0a93b" },
+  { label: "Missing info", emoji: "🧩", color: "#9b5cf6" },
+  { label: "Verify this", emoji: "🔍", color: "#e8893b" },
+  { label: "Give an example", emoji: "🧪", color: "#4f6bed" },
+  { label: "Match existing patterns", emoji: "🧭", color: "#12a8a0" },
+  { label: "Consider alternatives", emoji: "🔁", color: "#e0518f" },
+  { label: "Ensure no regression", emoji: "🛡️", color: "#e8893b" },
+  { label: "Out of scope", emoji: "🚫", color: "#d2483b" },
+  { label: "Needs review", emoji: "✅", color: "#4f6bed" },
+  { label: "Nice approach", emoji: "👍", color: "#1f9d57" },
+];
+
+const CONF: Record<Confidence, { rail: string; label: string; cls: string }> = {
+  human: { rail: "border-emerald-500", label: "Human-written — trusted", cls: "text-emerald-600 dark:text-emerald-400" },
+  agent_approved: { rail: "border-brand", label: "AI-written · human-approved", cls: "text-brand" },
+  agent_unverified: { rail: "border-amber-500", label: "AI-written · unverified", cls: "text-amber-600 dark:text-amber-400" },
 };
 
 let counter = 0;
 const nextId = () => `a${++counter}`;
+function rgba(hex: string, a: number) {
+  const n = parseInt(hex.replace("#", ""), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+function markStyle(a: Anno): React.CSSProperties {
+  if (a.style === "strike")
+    return { textDecoration: "line-through", textDecorationColor: a.color, background: rgba(a.color, 0.12), borderRadius: 3, padding: "0 2px" };
+  if (a.style === "replace") return { background: rgba(a.color, 0.2), borderRadius: 3, padding: "0 2px" };
+  return { background: rgba(a.color, 0.16), borderBottom: `2px solid ${a.color}`, borderRadius: 3, padding: "0 1px" };
+}
 
 export function Editor({
   doc,
@@ -43,7 +67,7 @@ export function Editor({
   currentPath,
 }: {
   doc: DocumentView;
-  files: FileEntry[];
+  files: Array<{ path: string; kind: string }>;
   currentPath: string;
 }) {
   const router = useRouter();
@@ -55,7 +79,8 @@ export function Editor({
 
   const [annos, setAnnos] = useState<Anno[]>([]);
   const [sel, setSel] = useState<{ blockIdx: number; quote: string; x: number; y: number } | null>(null);
-  const [composing, setComposing] = useState<{ blockIdx: number; quote: string; type: AnnoType } | null>(null);
+  const [showPresets, setShowPresets] = useState(false);
+  const [composing, setComposing] = useState<{ blockIdx: number; quote: string; mode: "comment" | "replace" } | null>(null);
   const [draftText, setDraftText] = useState("");
 
   const docRef = useRef<HTMLDivElement | null>(null);
@@ -98,7 +123,10 @@ export function Editor({
     const s = window.getSelection();
     const quote = s?.toString().trim() ?? "";
     if (!quote || !s || s.rangeCount === 0) {
-      if (!composing) setSel(null);
+      if (!composing) {
+        setSel(null);
+        setShowPresets(false);
+      }
       return;
     }
     let node: Node | null = s.anchorNode;
@@ -108,37 +136,25 @@ export function Editor({
     const blockIdx = Number((el as HTMLElement).dataset.bi);
     const rect = s.getRangeAt(0).getBoundingClientRect();
     setSel({ blockIdx, quote, x: rect.left + rect.width / 2, y: rect.top });
+    setShowPresets(false);
   }
 
-  function begin(type: AnnoType) {
-    if (!sel) return;
-    if (type === "delete") {
-      setAnnos((a) => [...a, { id: nextId(), blockIdx: sel.blockIdx, quote: sel.quote, type }]);
-      setSel(null);
-      window.getSelection()?.removeAllRanges();
-      return;
-    }
-    setComposing({ blockIdx: sel.blockIdx, quote: sel.quote, type });
-    setDraftText("");
+  const add = (a: Omit<Anno, "id">) => {
+    setAnnos((x) => [...x, { ...a, id: nextId() }]);
     setSel(null);
-  }
+    setShowPresets(false);
+    window.getSelection()?.removeAllRanges();
+  };
 
   function commitComposing() {
     if (!composing || !draftText.trim()) return;
-    setAnnos((a) => [
-      ...a,
-      {
-        id: nextId(),
-        blockIdx: composing.blockIdx,
-        quote: composing.quote,
-        type: composing.type,
-        note: composing.type === "comment" ? draftText.trim() : undefined,
-        replacement: composing.type === "replace" ? draftText.trim() : undefined,
-      },
-    ]);
+    add(
+      composing.mode === "comment"
+        ? { blockIdx: composing.blockIdx, quote: composing.quote, label: "Comment", color: C.indigo, style: "mark", note: draftText.trim() }
+        : { blockIdx: composing.blockIdx, quote: composing.quote, label: "Replace", color: C.amber, style: "replace", replacement: draftText.trim() },
+    );
     setComposing(null);
     setDraftText("");
-    window.getSelection()?.removeAllRanges();
   }
 
   return (
@@ -147,8 +163,7 @@ export function Editor({
         <div>
           <h1 className="font-mono text-sm text-muted">{currentPath}</h1>
           <p className="text-xs text-muted">
-            Review surface — select any text to comment, replace, or mark for deletion. Edits
-            autosave privately until you propose them.
+            Review surface — select any text to annotate. Edits autosave privately until you propose them.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -165,7 +180,6 @@ export function Editor({
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[13rem_1fr]">
-        {/* File browser */}
         <FileBrowser files={files} current={currentPath} />
 
         <div className="space-y-3">
@@ -204,30 +218,43 @@ export function Editor({
         </div>
       </div>
 
+      {/* Floating select toolbar */}
       {sel && !composing && (
-        <div
-          className="fixed z-40 -translate-x-1/2 -translate-y-full rounded-lg border border-line bg-surface p-1 text-sm shadow-lg"
-          style={{ left: sel.x, top: sel.y - 8 }}
-        >
-          <ToolbarBtn onClick={() => begin("comment")} dot={TYPE_META.comment.dot}>Comment</ToolbarBtn>
-          <ToolbarBtn onClick={() => begin("replace")} dot={TYPE_META.replace.dot}>Replace</ToolbarBtn>
-          <ToolbarBtn onClick={() => begin("delete")} dot={TYPE_META.delete.dot}>Delete</ToolbarBtn>
+        <div className="fixed z-40 -translate-x-1/2 -translate-y-full" style={{ left: sel.x, top: sel.y - 8 }}>
+          <div className="flex items-center gap-0.5 rounded-lg border border-line bg-surface p-1 text-sm shadow-lg">
+            <IconBtn title="Delete" onClick={() => add({ blockIdx: sel.blockIdx, quote: sel.quote, label: "Delete", color: C.rose, style: "strike" })}>🗑️</IconBtn>
+            <IconBtn title="Comment" onClick={() => { setComposing({ blockIdx: sel.blockIdx, quote: sel.quote, mode: "comment" }); setDraftText(""); setSel(null); }}>💬</IconBtn>
+            <IconBtn title="Replace" onClick={() => { setComposing({ blockIdx: sel.blockIdx, quote: sel.quote, mode: "replace" }); setDraftText(""); setSel(null); }}>✏️</IconBtn>
+            <IconBtn title="Quick annotations" active={showPresets} onClick={() => setShowPresets((v) => !v)}>⚡</IconBtn>
+          </div>
+          {showPresets && (
+            <div className="mt-1 max-h-72 w-64 overflow-auto rounded-lg border border-line bg-surface p-1 text-sm shadow-lg">
+              {PRESETS.map((p) => (
+                <button
+                  key={p.label}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => add({ blockIdx: sel.blockIdx, quote: sel.quote, label: p.label, emoji: p.emoji, color: p.color, style: "mark" })}
+                  className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left hover:bg-hover"
+                >
+                  <span>{p.emoji}</span>
+                  <span>{p.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {composing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={() => setComposing(null)}>
           <div className="w-full max-w-md space-y-3 rounded-xl bg-surface p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-1.5 text-sm font-semibold">
-              <span className="h-2 w-2 rounded-full" style={{ background: TYPE_META[composing.type].dot }} />
-              {TYPE_META[composing.type].label}
-            </div>
+            <div className="text-sm font-semibold">{composing.mode === "comment" ? "Comment" : "Replace"}</div>
             <div className="rounded-lg bg-surface2 px-3 py-2 text-xs italic text-muted">“{composing.quote}”</div>
             <textarea
               autoFocus
               value={draftText}
               onChange={(e) => setDraftText(e.target.value)}
-              placeholder={composing.type === "comment" ? "Add a comment…" : "Write the replacement text…"}
+              placeholder={composing.mode === "comment" ? "Add a comment…" : "Write the replacement text…"}
               className="h-24 w-full resize-none rounded-lg border border-line bg-surface px-3 py-2 text-sm"
             />
             <div className="flex justify-end gap-2">
@@ -250,9 +277,22 @@ export function Editor({
   );
 }
 
-function FileBrowser({ files, current }: { files: FileEntry[]; current: string }) {
+function IconBtn({ title, active, onClick, children }: { title: string; active?: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      title={title}
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={onClick}
+      className={`rounded-md px-2 py-1 text-base hover:bg-hover ${active ? "bg-brand/15 ring-1 ring-brand/40" : ""}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function FileBrowser({ files, current }: { files: Array<{ path: string; kind: string }>; current: string }) {
   const groups = useMemo(() => {
-    const m = new Map<string, FileEntry[]>();
+    const m = new Map<string, Array<{ path: string; kind: string }>>();
     for (const f of files) {
       const arr = m.get(f.kind) ?? [];
       arr.push(f);
@@ -275,9 +315,7 @@ function FileBrowser({ files, current }: { files: FileEntry[]; current: string }
                 <Link
                   key={f.path}
                   href={`/edit/${f.path}`}
-                  className={`block truncate rounded-md px-2 py-1 text-sm transition ${
-                    active ? "bg-brand/10 font-medium text-ink" : "text-muted hover:bg-hover hover:text-ink"
-                  }`}
+                  className={`block truncate rounded-md px-2 py-1 text-sm transition ${active ? "bg-brand/10 font-medium text-ink" : "text-muted hover:bg-hover hover:text-ink"}`}
                   title={f.path}
                 >
                   {name}
@@ -294,26 +332,10 @@ function FileBrowser({ files, current }: { files: FileEntry[]; current: string }
 function Legend() {
   return (
     <div className="flex flex-wrap items-center gap-4 px-1 text-xs text-muted">
-      <span className="flex items-center gap-1.5">
-        <span className="h-3 w-1 rounded bg-emerald-500" /> Human-verified — trusted
-      </span>
-      <span className="flex items-center gap-1.5">
-        <span className="h-3 w-1 rounded bg-amber-500" /> AI-written — review before trusting
-      </span>
+      <span className="flex items-center gap-1.5"><span className="h-3 w-1 rounded bg-emerald-500" /> Human-written — trusted</span>
+      <span className="flex items-center gap-1.5"><span className="h-3 w-1 rounded bg-brand" /> AI · human-approved</span>
+      <span className="flex items-center gap-1.5"><span className="h-3 w-1 rounded bg-amber-500" /> AI · unverified</span>
     </div>
-  );
-}
-
-function ToolbarBtn({ onClick, dot, children }: { onClick: () => void; dot: string; children: React.ReactNode }) {
-  return (
-    <button
-      onMouseDown={(e) => e.preventDefault()}
-      onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-ink hover:bg-hover"
-    >
-      <span className="h-2 w-2 rounded-full" style={{ background: dot }} />
-      {children}
-    </button>
   );
 }
 
@@ -324,7 +346,6 @@ function SaveBadge({ state, dirty }: { state: SaveState; dirty: boolean }) {
   return <span className="text-xs text-muted">{dirty ? "Unsaved" : "Up to date"}</span>;
 }
 
-/** A block with its inline annotations and an authorship confidence rail. */
 function Block({
   idx,
   block,
@@ -337,18 +358,15 @@ function Block({
   attribution?: Attribution;
 }) {
   const [hover, setHover] = useState(false);
-  const kind = attribution?.author.kind;
-  const rail = kind === "human" ? "border-emerald-500" : kind === "agent" ? "border-amber-500" : "border-transparent";
+  const conf = attribution?.confidence;
+  const meta = conf ? CONF[conf] : null;
   const inner = annotate(block.text, annos);
 
   const content =
     block.blockType === "heading" ? (
       <span className={(block.depth ?? 1) <= 1 ? "text-2xl font-semibold" : "text-lg font-semibold"}>{inner}</span>
     ) : block.blockType === "listItem" ? (
-      <span className="flex gap-2">
-        <span className="select-none text-muted">•</span>
-        <span>{inner}</span>
-      </span>
+      <span className="flex gap-2"><span className="select-none text-muted">•</span><span>{inner}</span></span>
     ) : block.blockType === "code" ? (
       <pre className="overflow-x-auto rounded-lg bg-slate-900/90 p-3 text-sm text-slate-100">{block.text}</pre>
     ) : (
@@ -358,25 +376,15 @@ function Block({
   return (
     <div
       data-bi={idx}
-      className={`relative border-l-2 py-1 pl-3 ${rail}`}
+      className={`relative border-l-2 py-1 pl-3 ${meta?.rail ?? "border-transparent"}`}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
       {content}
-      {hover && attribution && (
+      {hover && attribution && meta && (
         <div className="absolute left-3 z-10 mt-1 w-72 rounded-lg border border-line bg-surface p-2.5 text-xs shadow-lg">
-          {kind === "human" ? (
-            <div className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
-              ✓ Human-verified
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5 font-medium text-amber-600 dark:text-amber-400">
-              ⚠ AI-written — review before trusting
-            </div>
-          )}
-          <div className="mt-1 text-muted">
-            {attribution.author.name} · {relativeTime(attribution.mergedAt)}
-          </div>
+          <div className={`font-medium ${meta.cls}`}>{meta.label}</div>
+          <div className="mt-1 text-muted">{attribution.author.name} · {relativeTime(attribution.mergedAt)}</div>
         </div>
       )}
     </div>
@@ -396,7 +404,7 @@ function annotate(text: string, annos: Anno[]): React.ReactNode {
     if (start < cursor) continue;
     if (start > cursor) nodes.push(text.slice(cursor, start));
     nodes.push(
-      <mark key={a.id} title={a.note ?? a.replacement ?? TYPE_META[a.type].label} className={`rounded px-0.5 text-ink ${TYPE_META[a.type].mark}`}>
+      <mark key={a.id} title={`${a.emoji ?? ""} ${a.label}${a.note ? `: ${a.note}` : ""}${a.replacement ? ` → ${a.replacement}` : ""}`} style={markStyle(a)} className="text-ink">
         {a.quote}
       </mark>,
     );
@@ -410,7 +418,7 @@ function Annotations({ annos, onRemove }: { annos: Anno[]; onRemove: (id: string
   if (annos.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-line p-3 text-xs text-muted">
-        Select text in the document to add a comment, a replacement, or a deletion.
+        Select text to annotate — delete, comment, replace, or pick a quick annotation (⚡).
       </p>
     );
   }
@@ -421,16 +429,14 @@ function Annotations({ annos, onRemove }: { annos: Anno[]; onRemove: (id: string
         <div key={a.id} className="rounded-xl border border-line bg-surface p-3 shadow-card">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted">
-              <span className="h-2 w-2 rounded-full" style={{ background: TYPE_META[a.type].dot }} />
-              {TYPE_META[a.type].label}
+              <span className="h-2 w-2 rounded-full" style={{ background: a.color }} />
+              {a.emoji} {a.label}
             </span>
             <button onClick={() => onRemove(a.id)} className="text-xs text-muted hover:text-ink" aria-label="Remove annotation">✕</button>
           </div>
           <div className="mt-1 truncate text-xs italic text-muted">“{a.quote}”</div>
           {a.note && <div className="mt-1 text-sm">{a.note}</div>}
-          {a.replacement && (
-            <div className="mt-1 text-sm">→ <span className="rounded bg-amber-500/15 px-1">{a.replacement}</span></div>
-          )}
+          {a.replacement && <div className="mt-1 text-sm">→ <span className="rounded bg-amber-500/15 px-1">{a.replacement}</span></div>}
         </div>
       ))}
     </div>

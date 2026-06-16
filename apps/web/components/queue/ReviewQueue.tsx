@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 
@@ -35,6 +35,14 @@ export function ReviewQueue({ items }: { items: QueueItem[] }) {
   const [view, setView] = useState<"list" | "focus">("list");
   const [idx, setIdx] = useState(0);
 
+  // Honor a ?filter=… deep-link from the dashboard (works in static export).
+  useEffect(() => {
+    const f = new URLSearchParams(window.location.search).get("filter");
+    if (f && ["change_request", "ticket", "missing", "unread"].includes(f)) {
+      setFilter(f as QueueKind);
+    }
+  }, []);
+
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: items.length };
     for (const it of items) c[it.kind] = (c[it.kind] ?? 0) + 1;
@@ -55,7 +63,7 @@ export function ReviewQueue({ items }: { items: QueueItem[] }) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-2">
-          <SectionLabel n={1}>Review Queue</SectionLabel>
+          <SectionLabel n={1}>Inbox</SectionLabel>
           <h1 className="text-3xl font-semibold tracking-tight">Everything that needs you</h1>
           <p className="max-w-prose text-sm text-muted">
             One place to triage — change requests to approve, stale blocks to review, gaps to fill,
