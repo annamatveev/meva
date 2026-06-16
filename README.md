@@ -37,6 +37,23 @@ every autosave into one semantic commit on `main` and deletes the branch.
   auto-opens a review ticket routed to the Context Owner.
 - A change-request **dashboard** at `/` lists all CPRs with a governance snapshot.
 
+**Module 5 — Workspace binding** (`/setup`):
+- meva binds to an **external** context store (local path or git remote) and
+  keeps only a disposable working copy — it never owns the files. Layout + agent
+  mapping come from a versioned `.contextstudio.yml`.
+
+**Module 6 — Distribution** (`/distribution`):
+- On merge, renders per-agent slices (least privilege), signs a content-addressed
+  bundle (ed25519), and publishes it to a channel. `clients/agent-sync.mjs` pulls,
+  verifies signature + digests against a pinned key, and atomically swaps.
+
+**Module 7 — Auth & permissions** (`/login`):
+- Token sessions for human reviewers (no passwords) + hashed agent API keys.
+  The acting reviewer comes from the session; agents can't be impersonated.
+
+**Module 8 — Evals-as-publish-gate** (on the CPR screen):
+- Context-regression evals in `.contextstudio.yml`; failing evals block approval.
+
 ## Prerequisites
 
 - Node ≥ 20, `pnpm`, and a `git` binary on PATH (the backend shells out to real Git).
