@@ -133,20 +133,24 @@ function Preview({
         const key = blockKey(b.text);
         const attribution = attribByKey.get(key);
         return (
-          <BlockRow key={`${key}-${i}`} block={b} attribution={attribution} />
+          <BlockRow key={`${key}-${i}`} n={i + 1} block={b} attribution={attribution} />
         );
       })}
       <p className="border-t border-line px-3 py-2 text-xs text-muted">
-        Hover any line for its attribution. New or edited lines are unattributed until merged.
+        Hover any line for its attribution. Line numbers turn{" "}
+        <span className="font-medium text-emerald-500/80">green</span> for new or edited lines,
+        unattributed until merged.
       </p>
     </div>
   );
 }
 
 function BlockRow({
+  n,
   block,
   attribution,
 }: {
+  n: number;
   block: ReturnType<typeof parseBlocks>[number];
   attribution?: Attribution;
 }) {
@@ -172,11 +176,16 @@ function BlockRow({
       onMouseLeave={() => setHover(false)}
     >
       <span
-        className={`mt-1 h-2 w-2 shrink-0 rounded-full ${
-          attribution ? "bg-muted" : "bg-emerald-400"
+        className={`mt-0.5 w-7 shrink-0 select-none text-right font-mono text-xs tabular-nums ${
+          attribution
+            ? "text-muted/40"
+            : "font-semibold text-emerald-500/80"
         }`}
+        title={attribution ? undefined : "New / edited — unattributed until merged"}
         aria-hidden
-      />
+      >
+        {n}
+      </span>
       <div className="flex-1">{inner}</div>
       {hover && (
         <div className="absolute right-3 top-1 z-10 w-72 rounded-lg border border-line bg-surface p-3 text-xs shadow-lg">
