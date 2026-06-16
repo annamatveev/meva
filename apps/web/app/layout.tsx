@@ -35,8 +35,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="app-bg min-h-screen">
           {DEMO && <DemoBanner />}
           <header className="sticky top-0 z-30 border-b border-line bg-surface/70 backdrop-blur">
-            <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 py-3">
-              <Link href="/" className="flex items-center gap-2.5">
+            <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 py-3">
+              <Link href="/" className="flex shrink-0 items-center gap-2.5">
                 <Logo size={28} />
                 <span className="flex items-baseline gap-2">
                   <span className="font-mono text-lg font-bold uppercase tracking-tight">meva</span>
@@ -62,7 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   Workspace
                 </NavLink>
               </nav>
-              <div className="ml-auto flex items-center gap-2">
+              <div className="ml-auto flex shrink-0 items-center gap-2">
                 <ThemeToggle />
                 <UserMenu />
               </div>
