@@ -25,7 +25,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(__dirname, "out");
 const BASE = (process.env.DEMO_URL ?? "https://annamatveev.github.io/meva").replace(/\/$/, "");
-const PACE = Number(process.env.PACE ?? 1); // global timing multiplier
+const PACE = Number(process.env.PACE ?? 0.8); // global timing multiplier (<1 = faster)
 const MAX_SECONDS = Number(process.env.MAX_SECONDS ?? 10); // hard cap on the mp4
 
 const WIDTH = 1280;
@@ -91,35 +91,42 @@ async function main() {
   const page = await context.newPage();
   console.log("Recording ~", MAX_SECONDS, "s walkthrough of", BASE);
 
-  // Tight 5-beat story: see the queue -> review a change -> approve -> published.
+  // Story: the queue & health → review a change (diff, who's affected, checks)
+  // → approve → it's published, signed, to your agents.
   await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
   await ensureCursor(page);
-  await wait(page, 1100);
+  await wait(page, 850);
 
-  // 1. Open a change request
-  await step(page, page.getByText("Tighten digital refund window", { exact: false }), { click: true, dwell: 300 });
+  // 1. Context health snapshot (fresh / stale / expired)
+  await step(page, page.getByText("Context health", { exact: false }), { dwell: 750 });
+
+  // 2. Open a change request
+  await step(page, page.getByText("Tighten digital refund window", { exact: false }), { click: true, dwell: 250 });
   await page.waitForLoadState("networkidle");
   await ensureCursor(page);
-  await wait(page, 500);
+  await wait(page, 450);
 
-  // 2. The semantic diff — hover to reveal attribution
-  await step(page, page.getByText("Digital goods are refundable", { exact: false }), { hover: true, dwell: 1200 });
+  // 3. The semantic diff — hover the edited line to reveal who wrote it
+  await step(page, page.getByText("Digital goods are refundable", { exact: false }), { hover: true, dwell: 1100 });
 
-  // 3. Evals (the gate)
-  await step(page, page.getByText("Context evals", { exact: false }), { hover: true, dwell: 900 });
+  // 4. Blast radius — which agents this change affects
+  await step(page, page.getByText("Blast radius", { exact: false }), { hover: true, dwell: 950 });
 
-  // 4. Approve
+  // 5. Evals — automated checks that gate the merge
+  await step(page, page.getByText("Context evals", { exact: false }), { hover: true, dwell: 850 });
+
+  // 6. Acknowledge + approve
   try {
     const ack = page.getByRole("checkbox").first();
     if (await ack.isVisible()) { await glide(page, ack); await ack.check(); }
   } catch {}
-  await step(page, page.getByRole("button", { name: /Approve/ }), { click: true, dwell: 900 });
+  await step(page, page.getByRole("button", { name: /Approve/ }), { click: true, dwell: 850 });
 
-  // 5. Published to agents
-  await step(page, page.getByRole("link", { name: "Distribution" }), { click: true, dwell: 300 });
+  // 7. Published — signed, per-agent bundle
+  await step(page, page.getByRole("link", { name: "Distribution" }), { click: true, dwell: 250 });
   await page.waitForLoadState("networkidle");
   await ensureCursor(page);
-  await wait(page, 1600);
+  await wait(page, 1500);
 
   await context.close();
   await browser.close();
