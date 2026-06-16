@@ -7,6 +7,7 @@ import type { ApprovalAction, ContextPR, SessionUser } from "@context-studio/typ
 import { submitApproval } from "@/lib/api";
 import { authHeaders, getSession } from "@/lib/auth";
 import { AuthorBadge } from "./ui";
+import { Hint } from "@/components/ui/Tooltip";
 
 const DECISION_MARK: Record<string, { icon: string; className: string; label: string }> = {
   approved: { icon: "✓", className: "text-emerald-600", label: "Approved" },
@@ -78,7 +79,13 @@ export function ApprovalPanel({ pr }: { pr: ContextPR }) {
 
   return (
     <section className="space-y-4 rounded-xl border border-line bg-surface p-4 shadow-sm">
-      <h2 className="text-sm font-semibold">Approval routing</h2>
+      <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+        Approval routing
+        <Hint side="top">
+          The reviewers who must sign off. Approving as the last required reviewer merges the
+          change and publishes it to agents. You can only act as yourself.
+        </Hint>
+      </h2>
 
       {/* Reviewer roster */}
       <ul className="space-y-1.5">

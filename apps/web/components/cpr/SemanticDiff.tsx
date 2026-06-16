@@ -1,5 +1,6 @@
 import type { SemanticDiff as Diff } from "@context-studio/types";
 import { SemanticDiffBlock } from "./SemanticDiffBlock";
+import { Hint } from "@/components/ui/Tooltip";
 
 /**
  * Semantic Diff viewer — block-level changes rendered like a collaborative
@@ -11,7 +12,13 @@ export function SemanticDiff({ diff }: { diff: Diff }) {
     <section className="rounded-xl border border-line bg-surface shadow-sm">
       <div className="flex items-center justify-between border-b border-line px-5 py-3">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold">Proposed changes</h2>
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+            Proposed changes
+            <Hint>
+              Changes shown by logical block — added, edited, or removed — like a wiki, not a
+              code diff. Edited text highlights the exact words that changed.
+            </Hint>
+          </h2>
           <span className="text-xs text-muted">{diff.documentPath}</span>
         </div>
         <div className="flex items-center gap-3 text-xs font-medium">

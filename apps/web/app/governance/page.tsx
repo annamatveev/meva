@@ -1,5 +1,13 @@
 import { getFreshnessOverview, listTickets } from "@/lib/api";
 import { AuthorBadge, FreshnessPill, relativeTime } from "@/components/cpr/ui";
+import { Hint } from "@/components/ui/Tooltip";
+
+const STATE_HINTS: Record<string, string> = {
+  Fresh: "Reviewed recently, within its review window. Trusted.",
+  Stale: "Past its review window — probably fine, but no one has confirmed it lately.",
+  Expired: "Long past its window — shouldn't be trusted until re-confirmed.",
+  Conflicted: "Two or more open change requests edit this same block; needs resolution.",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +28,14 @@ export default async function GovernancePage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Governance</h1>
+        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+          Governance
+          <Hint>
+            An expiry date on knowledge. Each block of context moves through fresh → stale →
+            expired as its review window lapses; a background worker auto-opens a review ticket so
+            nobody has to remember to check.
+          </Hint>
+        </h1>
         <p className="mt-1 max-w-prose text-sm text-muted">
           Every context block has a freshness lifecycle. A background worker flags blocks past their
           review window and opens a ticket automatically — no one has to remember to check.
@@ -102,7 +117,10 @@ function Stat({ label, value, tone }: { label: string; value: number; tone: stri
   return (
     <div className="rounded-xl border border-line bg-surface p-4 shadow-sm">
       <div className={`text-2xl font-semibold ${tone}`}>{value}</div>
-      <div className="text-xs text-muted">{label} blocks</div>
+      <div className="flex items-center gap-1 text-xs text-muted">
+        {label} blocks
+        {STATE_HINTS[label] && <Hint side="top">{STATE_HINTS[label]}</Hint>}
+      </div>
     </div>
   );
 }

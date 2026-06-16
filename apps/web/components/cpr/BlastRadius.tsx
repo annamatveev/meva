@@ -1,5 +1,6 @@
 import type { BlastRadius as Blast } from "@context-studio/types";
 import { SeverityPill } from "./ui";
+import { Hint } from "@/components/ui/Tooltip";
 
 const HEADLINE: Record<Blast["maxSeverity"], { title: string; tone: string }> = {
   low: { title: "Low impact", tone: "border-emerald-500/30 bg-emerald-500/10" },
@@ -28,8 +29,13 @@ export function BlastRadius({ blast }: { blast: Blast }) {
   return (
     <section className={`rounded-xl border p-4 ${head.tone}`}>
       <div className="flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold">
           <span aria-hidden>⚠️</span> Blast radius — {head.title}
+          <Hint>
+            Which AI agents depend on the context this change touches. The highest severity here
+            sets how much sign-off merging requires — a high-impact change must be acknowledged
+            before it can merge.
+          </Hint>
         </h2>
         <SeverityPill severity={blast.maxSeverity} />
       </div>

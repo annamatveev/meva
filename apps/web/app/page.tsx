@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getFreshnessOverview, getWorkspace, listContextPrs } from "@/lib/api";
 import { AuthorBadge, SeverityPill, StatusBadge, relativeTime } from "@/components/cpr/ui";
+import { Hint } from "@/components/ui/Tooltip";
+import { WelcomeGuide } from "@/components/onboarding/WelcomeGuide";
 
 export const dynamic = "force-dynamic";
 
@@ -36,9 +38,16 @@ export default async function Dashboard() {
 
   return (
     <div className="space-y-8">
+      <WelcomeGuide />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Change Requests</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+            Change Requests
+            <Hint>
+              Each row is a proposed change to your context, opened by a person or an agent.
+              Click one to review its diff, impact, and checks, then approve or request changes.
+            </Hint>
+          </h1>
           <p className="mt-1 max-w-prose text-sm text-muted">
             Review and authorize proposed changes to the context that feeds your autonomous agents.
           </p>

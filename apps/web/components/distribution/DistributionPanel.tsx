@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { DistributionStatus } from "@context-studio/types";
 import { getDistribution, publishDistribution } from "@/lib/api";
+import { Hint } from "@/components/ui/Tooltip";
 
 export function DistributionPanel() {
   const [status, setStatus] = useState<DistributionStatus | null>(null);
@@ -29,7 +30,13 @@ export function DistributionPanel() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Distribution</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+            Distribution
+            <Hint>
+              How approved context reaches your agents. Each agent gets only the documents it’s
+              authorized for, signed so the agent can verify it wasn’t tampered with before using it.
+            </Hint>
+          </h1>
           <p className="mt-1 max-w-prose text-sm text-muted">
             Approved context is published as a signed, per-agent bundle. Agents pull it,
             verify the ed25519 signature and every file digest, then atomically swap their

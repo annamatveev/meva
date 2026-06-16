@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { EvalReport } from "@context-studio/types";
 import { getEvals } from "@/lib/api";
+import { Hint } from "@/components/ui/Tooltip";
 
 /**
  * Evals panel — runs the context-regression suite against the proposed change
@@ -52,8 +53,12 @@ export function EvalsPanel({ prId }: { prId: string }) {
       }`}
     >
       <div className="flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold">
           <span aria-hidden>{report.passed ? "✓" : "⚠️"}</span> Context evals
+          <Hint side="top">
+            Automated checks that this change doesn’t drop facts your agents rely on. If any
+            check fails, the change can’t be approved until it’s fixed.
+          </Hint>
         </h2>
         <span className="text-xs font-medium">
           {report.passed ? "all passing" : `${failed} failing — blocks merge`}
