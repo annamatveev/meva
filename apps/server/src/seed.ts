@@ -139,6 +139,7 @@ Refunds above $500 require a second approver before they are issued.
 async function resetDb() {
   // Order matters for FK constraints.
   await db.apiKey.deleteMany();
+  await db.workspaceSource.deleteMany();
   await db.workspace.deleteMany();
   await db.reviewTicket.deleteMany();
   await db.blockFreshness.deleteMany();
@@ -193,7 +194,8 @@ async function main() {
     message: "Add Context Studio workspace config",
   });
 
-  // Bind this instance to the seeded repo as a local workspace.
+  // Bind this instance to the seeded repo. Three typed sources sharing one
+  // (unified) repo to illustrate the context / skills / memory model.
   await db.workspace.create({
     data: {
       id: "default",
@@ -202,6 +204,14 @@ async function main() {
       identityName: OWNER.name,
       identityEmail: "dana@context.studio",
     },
+  });
+  await db.workspaceSource.createMany({
+    data: ["context", "skills", "memory"].map((kind) => ({
+      kind,
+      sourceType: "local",
+      location: CONTEXT_REPO_DIR,
+      workspaceId: "default",
+    })),
   });
 
   // --- Baseline policy committed to main (pr-000, already merged) -------

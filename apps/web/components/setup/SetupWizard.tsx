@@ -2,32 +2,47 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { WorkspaceInfo, WorkspaceSourceType } from "@context-studio/types";
+import {
+  BUILTIN_SOURCE_KINDS,
+  type WorkspaceInfo,
+  type WorkspaceSourceType,
+} from "@context-studio/types";
 import { configureWorkspace } from "@/lib/api";
 import { authHeaders } from "@/lib/auth";
+import { SectionLabel } from "@/components/ui/SectionLabel";
+import { SourceChip } from "@/components/ui/SourceChip";
+
+interface Row {
+  kind: string;
+  sourceType: WorkspaceSourceType;
+  location: string;
+}
 
 export function SetupWizard({ initial }: { initial: WorkspaceInfo }) {
   const router = useRouter();
-  const [sourceType, setSourceType] = useState<WorkspaceSourceType>(
-    initial.sourceType ?? "local",
-  );
-  const [location, setLocation] = useState(initial.location ?? "");
   const [identityName, setIdentityName] = useState(initial.identityName ?? "");
   const [identityEmail, setIdentityEmail] = useState(initial.identityEmail ?? "");
+  const [rows, setRows] = useState<Row[]>(
+    initial.sources.length
+      ? initial.sources.map((s) => ({ kind: s.kind, sourceType: s.sourceType, location: s.location }))
+      : [{ kind: "context", sourceType: "local", location: "" }],
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const update = (i: number, patch: Partial<Row>) =>
+    setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  const addRow = () => setRows((rs) => [...rs, { kind: "skills", sourceType: "local", location: "" }]);
+  const removeRow = (i: number) => setRows((rs) => rs.filter((_, j) => j !== i));
+
   async function submit() {
     setError(null);
-    if (!location.trim() || !identityName.trim() || !identityEmail.trim()) {
-      setError("Fill in every field.");
+    if (!identityName.trim() || !identityEmail.trim() || rows.some((r) => !r.kind.trim() || !r.location.trim())) {
+      setError("Fill in your identity and every source's type + location.");
       return;
     }
     setBusy(true);
-    const res = await configureWorkspace(
-      { sourceType, location, identityName, identityEmail },
-      authHeaders(),
-    );
+    const res = await configureWorkspace({ identityName, identityEmail, sources: rows }, authHeaders());
     setBusy(false);
     if (!res.ok) {
       setError(res.error);
@@ -38,60 +53,90 @@ export function SetupWizard({ initial }: { initial: WorkspaceInfo }) {
   }
 
   return (
-    <div className="mx-auto max-w-xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Connect your context</h1>
-        <p className="mt-1 text-sm text-muted">
-          Point Context Studio at where your agent context lives. meva stores only this
-          connection — never a permanent copy of your files.
+    <div className="mx-auto max-w-2xl space-y-6">
+      <div className="space-y-2">
+        <SectionLabel n={0}>Workspace</SectionLabel>
+        <h1 className="text-2xl font-semibold tracking-tight">Connect your sources</h1>
+        <p className="max-w-prose text-sm text-muted">
+          A workspace holds the typed Markdown your agent reads — context, skills, memory, or
+          anything you define. Each type can live in its own repo, or share a unified one. bravo
+          keeps only the connection, never a permanent copy.
         </p>
       </div>
 
-      <div className="space-y-5 rounded-xl border border-line bg-surface p-5 shadow-sm">
-        {/* Source type */}
-        <div>
-          <label className="text-xs font-medium text-muted">Where does the context live?</label>
-          <div className="mt-1.5 grid grid-cols-2 gap-2">
-            <SourceCard
-              active={sourceType === "local"}
-              onClick={() => setSourceType("local")}
-              title="Local path"
-              body="A directory meva can reach directly (meva runs next to the files)."
-            />
-            <SourceCard
-              active={sourceType === "remote"}
-              onClick={() => setSourceType("remote")}
-              title="Git remote"
-              body="An SSH/HTTPS git URL. meva keeps a disposable working clone."
-            />
-          </div>
+      <div className="space-y-4 rounded-xl border border-line bg-surface p-5 shadow-card">
+        <div className="space-y-3">
+          {rows.map((r, i) => (
+            <div key={i} className="grid grid-cols-[8rem_7rem_1fr_auto] items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <SourceChip kind={r.kind} />
+                <input
+                  list="kinds"
+                  value={r.kind}
+                  onChange={(e) => update(i, { kind: e.target.value })}
+                  className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-xs"
+                />
+              </div>
+              <select
+                value={r.sourceType}
+                onChange={(e) => update(i, { sourceType: e.target.value as WorkspaceSourceType })}
+                className="rounded-md border border-line bg-surface px-2 py-1.5 text-xs"
+              >
+                <option value="local">local path</option>
+                <option value="remote">git remote</option>
+              </select>
+              <input
+                value={r.location}
+                onChange={(e) => update(i, { location: e.target.value })}
+                placeholder={r.sourceType === "local" ? "/srv/agent/skills" : "git@host:agent/skills.git"}
+                className="w-full rounded-md border border-line bg-surface px-2 py-1.5 font-mono text-xs"
+              />
+              <button
+                onClick={() => removeRow(i)}
+                disabled={rows.length === 1}
+                aria-label="Remove source"
+                className="rounded-md px-2 py-1 text-sm text-muted hover:bg-hover disabled:opacity-30"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          <datalist id="kinds">
+            {BUILTIN_SOURCE_KINDS.map((k) => (
+              <option key={k} value={k} />
+            ))}
+          </datalist>
+          <button onClick={addRow} className="text-xs font-medium text-brand hover:underline">
+            + Add a source
+          </button>
         </div>
 
-        <Field
-          label={sourceType === "local" ? "Directory path" : "Git remote URL"}
-          value={location}
-          onChange={setLocation}
-          placeholder={
-            sourceType === "local"
-              ? "/srv/context  (or ./apps/server/.context-repo)"
-              : "git@192.168.0.173:context.git"
-          }
-          mono
-        />
+        <div className="h-px bg-line" />
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Your name" value={identityName} onChange={setIdentityName} placeholder="Dana Levi" />
-          <Field
-            label="Your email"
-            value={identityEmail}
-            onChange={setIdentityEmail}
-            placeholder="dana@context.studio"
-          />
+          <label className="block text-xs font-medium text-muted">
+            Your name
+            <input
+              value={identityName}
+              onChange={(e) => setIdentityName(e.target.value)}
+              placeholder="Dana Levi"
+              className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block text-xs font-medium text-muted">
+            Your email
+            <input
+              value={identityEmail}
+              onChange={(e) => setIdentityEmail(e.target.value)}
+              placeholder="dana@acme.com"
+              className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+            />
+          </label>
         </div>
 
         <p className="text-xs text-muted">
-          The layout and agent mapping are read from a <code>.contextstudio.yml</code> committed
-          in that repo, so they stay versioned with your content.
+          Layout and agent mapping are read from a versioned <code>.bravo.yml</code> in the
+          context source. A <code>context</code> source backs editing; others are tracked too.
         </p>
 
         {error && <p className="rounded-lg bg-rose-500/10 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
@@ -105,60 +150,5 @@ export function SetupWizard({ initial }: { initial: WorkspaceInfo }) {
         </button>
       </div>
     </div>
-  );
-}
-
-function SourceCard({
-  active,
-  onClick,
-  title,
-  body,
-}: {
-  active: boolean;
-  onClick: () => void;
-  title: string;
-  body: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-lg border p-3 text-left transition ${
-        active ? "border-ink bg-hover" : "border-line hover:border-line"
-      }`}
-    >
-      <div className="flex items-center gap-2 text-sm font-medium">
-        <span className={`h-2 w-2 rounded-full ${active ? "bg-brand" : "bg-muted"}`} aria-hidden />
-        {title}
-      </div>
-      <p className="mt-1 text-xs text-muted">{body}</p>
-    </button>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-  mono,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  mono?: boolean;
-}) {
-  return (
-    <label className="block text-xs font-medium text-muted">
-      {label}
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className={`mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink ${
-          mono ? "font-mono" : ""
-        }`}
-      />
-    </label>
   );
 }

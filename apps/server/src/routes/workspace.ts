@@ -1,8 +1,8 @@
 /**
- * Workspace routes (Module 5).
+ * Workspace routes.
  *
  *   GET  /api/context/workspace  — current binding (or { configured: false })
- *   POST /api/context/workspace  — bind to an external context store
+ *   POST /api/context/workspace  — bind to typed sources (owner)
  */
 
 import { Router } from "express";
@@ -17,13 +17,12 @@ export function createWorkspaceRouter(wm: WorkspaceManager, auth: AuthService): 
 
   const toInfo = (): WorkspaceInfo => {
     const ctx = wm.current();
-    if (!ctx) return { configured: false, documents: [], agents: [] };
+    if (!ctx) return { configured: false, sources: [], documents: [], agents: [] };
     return {
       configured: true,
-      sourceType: ctx.sourceType,
-      location: ctx.location,
       identityName: ctx.identity.name,
       identityEmail: ctx.identity.email,
+      sources: ctx.sources,
       documents: ctx.documents,
       agents: ctx.agents.map((a) => ({ id: a.id, name: a.name })),
     };
@@ -32,10 +31,17 @@ export function createWorkspaceRouter(wm: WorkspaceManager, auth: AuthService): 
   router.get("/", (_req, res) => res.json(toInfo()));
 
   const configureSchema = z.object({
-    sourceType: z.enum(["local", "remote"]),
-    location: z.string().min(1),
     identityName: z.string().min(1),
     identityEmail: z.string().email(),
+    sources: z
+      .array(
+        z.object({
+          kind: z.string().min(1),
+          sourceType: z.enum(["local", "remote"]),
+          location: z.string().min(1),
+        }),
+      )
+      .min(1),
   });
 
   router.post("/", async (req, res) => {
@@ -51,9 +57,7 @@ export function createWorkspaceRouter(wm: WorkspaceManager, auth: AuthService): 
       res.json(toInfo());
     } catch (err) {
       console.error(err);
-      res.status(422).json({
-        error: `Could not bind to "${parsed.data.location}": ${(err as Error).message}`,
-      });
+      res.status(422).json({ error: `Could not bind sources: ${(err as Error).message}` });
     }
   });
 

@@ -211,10 +211,13 @@ const DISTRIBUTION: DistributionStatus = {
 
 const WORKSPACE: WorkspaceInfo = {
   configured: true,
-  sourceType: "local",
-  location: "/srv/context (demo)",
   identityName: "Dana Levi",
   identityEmail: "dana@context.studio",
+  sources: [
+    { id: "s0", kind: "context", sourceType: "remote", location: "git@git.acme.internal:agents/support-context.git" },
+    { id: "s1", kind: "skills", sourceType: "remote", location: "git@git.acme.internal:agents/support-skills.git" },
+    { id: "s2", kind: "memory", sourceType: "local", location: "/srv/agents/support/memory" },
+  ],
   documents: [DOC],
   agents: [
     { id: "agent-refunds", name: "Refund Resolution Agent" },

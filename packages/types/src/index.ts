@@ -298,6 +298,23 @@ export interface AuthConfig {
 
 export type WorkspaceSourceType = "local" | "remote";
 
+/**
+ * The kind of Markdown a source holds. Built-ins are context / skills / memory,
+ * but it's open — any custom type is allowed. Drives colour-coding in the UI.
+ */
+export type SourceKind = "context" | "skills" | "memory" | (string & {});
+
+export const BUILTIN_SOURCE_KINDS: SourceKind[] = ["context", "skills", "memory"];
+
+/** One typed source in a workspace — its own repo, or a shared/unified one. */
+export interface WorkspaceSource {
+  id: string;
+  kind: SourceKind;
+  sourceType: WorkspaceSourceType;
+  /** Local path or git remote. Sources may share a location (unified repo). */
+  location: string;
+}
+
 /** A registered agent + its context subscription (from .contextstudio.yml). */
 export interface RegisteredAgent {
   id: string;
@@ -373,21 +390,21 @@ export interface DistributionStatus {
 /** The active workspace, as surfaced to the UI. */
 export interface WorkspaceInfo {
   configured: boolean;
-  sourceType?: WorkspaceSourceType;
-  location?: string;
   identityName?: string;
   identityEmail?: string;
-  /** Discovered document paths in the bound store. */
+  /** Typed sources (context / skills / memory / custom), each a repo. */
+  sources: WorkspaceSource[];
+  /** Discovered document paths across the bound stores. */
   documents: string[];
-  /** Discovered agents (from .contextstudio.yml, else built-in fallback). */
+  /** Discovered agents (from .bravo.yml, else built-in fallback). */
   agents: Array<{ id: string; name: string }>;
 }
 
 export interface ConfigureWorkspaceBody {
-  sourceType: WorkspaceSourceType;
-  location: string;
   identityName: string;
   identityEmail: string;
+  /** At least one source. The first (or a `context` one) backs current editing. */
+  sources: Array<{ kind: SourceKind; sourceType: WorkspaceSourceType; location: string }>;
 }
 
 // ---------------------------------------------------------------------------

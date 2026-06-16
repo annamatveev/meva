@@ -19,12 +19,24 @@ datasource db {
 // `location`. A single active workspace is supported (id = "default").
 model Workspace {
   id            String   @id @default("default")
-  sourceType    String // "local" | "remote"
-  location      String // local path, or a git remote URL
+  sourceType    String // primary source: "local" | "remote" (backs current editing)
+  location      String // primary source location
   identityName  String
   identityEmail String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  sources       WorkspaceSource[]
+}
+
+// A typed source in the workspace (context / skills / memory / custom). Each can
+// be its own repo or share a location (unified repo).
+model WorkspaceSource {
+  id          String @id @default(cuid())
+  kind        String
+  sourceType  String // "local" | "remote"
+  location    String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String
 }
 
 // Hashed API key for an autonomous agent. The raw key is shown once at
