@@ -155,6 +155,7 @@ export async function publishDistribution(): Promise<DistributionStatus> {
 export const exportUrls = {
   llmsTxt: `${API_BASE}/api/context/export/llms.txt`,
   fcontext: `${API_BASE}/api/context/export/fcontext`,
+  ledgerCsv: `${API_BASE}/api/context/export/ledger.csv`,
 };
 
 // --- Auth (Module 7) -----------------------------------------------------

@@ -19,6 +19,7 @@ import type {
 } from "@context-studio/types";
 import { db } from "../lib/db.js";
 import { EXPIRED_GRACE_DAYS } from "../lib/config.js";
+import { notify } from "../lib/notify.js";
 import { GitService, MAIN_BRANCH } from "./GitService.js";
 import { blockKey, computeSemanticDiff } from "./SemanticDiffService.js";
 
@@ -84,6 +85,7 @@ export class FreshnessService {
             },
           });
           ticketsOpened++;
+          void notify({ kind: "ticket_opened", documentPath: b.documentPath, reason });
         }
       }
     }

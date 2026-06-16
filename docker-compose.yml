@@ -20,6 +20,7 @@ services:
       CONTEXT_DIST_DIR: "/data/.dist"
       CONTEXT_SIGNING_DIR: "/data/.signing"
       # SEED: "0"   # uncomment to skip first-boot demo seeding
+      # CONTEXT_WEBHOOK_URL: "https://hooks.slack.com/services/…"  # event notifications (Slack or any endpoint)
     volumes:
       - cs-data:/data
     healthcheck:

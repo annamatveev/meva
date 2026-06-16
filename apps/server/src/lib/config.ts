@@ -36,3 +36,8 @@ export const SIGNING_DIR = path.resolve(
   SERVER_ROOT,
   process.env.CONTEXT_SIGNING_DIR ?? ".signing",
 );
+
+// --- Notifications (Module 9) --------------------------------------------
+
+/** Optional outbound webhook for events. A Slack incoming-webhook URL works. */
+export const WEBHOOK_URL = process.env.CONTEXT_WEBHOOK_URL ?? "";

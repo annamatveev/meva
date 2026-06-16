@@ -54,6 +54,17 @@ every autosave into one semantic commit on `main` and deletes the branch.
 **Module 8 — Evals-as-publish-gate** (on the CPR screen):
 - Context-regression evals in `.contextstudio.yml`; failing evals block approval.
 
+**Module 9 — Connections:**
+- **CSV export** — the change-request ledger at `/api/context/export/ledger.csv`
+  (and an "Export CSV" button on the dashboard).
+- **Webhooks / Slack** — set `CONTEXT_WEBHOOK_URL` to receive a POST on PR
+  opened/merged and ticket opened. A Slack incoming-webhook URL gets Slack's
+  `{ text }` shape; any other URL gets a structured JSON event.
+- **Agent SDK loader** — `clients/meva-context.mjs` turns a synced bundle into a
+  system prompt for LangChain / LlamaIndex / Mastra / Vercel AI SDK / OpenAI /
+  Anthropic agents.
+- SSO (Okta/Google) and email digests are roadmap — they need your IdP / SMTP.
+
 ## Run with Docker (whole stack)
 
 ```bash

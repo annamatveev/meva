@@ -15,6 +15,7 @@ import type {
 } from "@context-studio/types";
 import { db } from "../lib/db.js";
 import { BUILTIN_AGENTS, computeBlastEntries } from "../lib/agents.js";
+import { notify } from "../lib/notify.js";
 import { GitService, MAIN_BRANCH } from "./GitService.js";
 import { blockKey, computeSemanticDiff } from "./SemanticDiffService.js";
 
@@ -138,6 +139,15 @@ export class DocService {
           ? { create: [{ authorId: fallbackOwner.id, decision: "pending", required: true }] }
           : undefined,
       },
+    });
+
+    const author = await db.author.findUnique({ where: { id: draft.authorId } });
+    void notify({
+      kind: "pr_opened",
+      prId: draftPrId,
+      title,
+      author: author?.name ?? "a Context Owner",
+      origin: "ui",
     });
 
     return { prId: draftPrId };

@@ -25,6 +25,7 @@ import { EvalService } from "../services/EvalService.js";
 import { DistributionService } from "../services/DistributionService.js";
 import type { SigningService } from "../services/SigningService.js";
 import { AuthService, bearer } from "../services/AuthService.js";
+import { notify } from "../lib/notify.js";
 import type { WorkspaceManager } from "../services/WorkspaceManager.js";
 
 /** Resolve the active workspace or send 409 — null means "handled, stop". */
@@ -143,6 +144,7 @@ export function createPrRouter(
         } catch (pubErr) {
           console.error("[distribution] publish after merge failed:", pubErr);
         }
+        void notify({ kind: "pr_merged", prId: result.pr.id, title: result.pr.title });
       }
       res.json(result);
     } catch (err) {
@@ -222,6 +224,7 @@ export function createPrRouter(
         },
       });
 
+      void notify({ kind: "pr_opened", prId, title: body.title, author: agent.name, origin: "agent" });
       const response: AgentSubmitResponse = { prId, status: "in_review" };
       res.status(201).json(response);
     } catch (err) {

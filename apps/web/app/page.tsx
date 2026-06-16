@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getFreshnessOverview, getWorkspace, listContextPrs } from "@/lib/api";
 import { AuthorBadge, SeverityPill, StatusBadge, relativeTime } from "@/components/cpr/ui";
+import { exportUrls } from "@/lib/api";
 import { Hint } from "@/components/ui/Tooltip";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { WelcomeGuide } from "@/components/onboarding/WelcomeGuide";
@@ -55,12 +56,20 @@ export default async function Dashboard() {
             before it ships — your data, your reviewers.
           </p>
         </div>
-        <Link
-          href="/edit/policies/refunds.md"
-          className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
-        >
-          + Edit a policy
-        </Link>
+        <div className="flex items-center gap-2">
+          <a
+            href={exportUrls.ledgerCsv}
+            className="rounded-lg border border-line px-3 py-2 text-sm font-medium text-muted transition hover:bg-hover hover:text-ink"
+          >
+            Export CSV
+          </a>
+          <Link
+            href="/edit/policies/refunds.md"
+            className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+          >
+            + Edit a policy
+          </Link>
+        </div>
       </div>
 
       <section className="space-y-3">
