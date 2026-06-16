@@ -9,6 +9,7 @@ import type {
   ContextPrSummary,
   DistributionStatus,
   DocumentView,
+  EvalReport,
   FreshnessOverview,
   ReviewTicket,
   WorkspaceInfo,
@@ -26,6 +27,13 @@ export async function getContextPr(id: string): Promise<ContextPR | null> {
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Failed to load Context PR ${id}: ${res.status}`);
   return (await res.json()) as ContextPR;
+}
+
+/** Run the regression evals for a PR's proposed change. */
+export async function getEvals(id: string): Promise<EvalReport> {
+  const res = await fetch(`${API_BASE}/api/context/pr/${id}/evals`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to run evals: ${res.status}`);
+  return (await res.json()) as EvalReport;
 }
 
 /** Current workspace binding (server-side, uncached). */

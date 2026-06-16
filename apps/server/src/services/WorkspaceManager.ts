@@ -16,7 +16,7 @@
 
 import path from "node:path";
 import { parse as parseYaml } from "yaml";
-import type { RegisteredAgent, WorkspaceSourceType } from "@context-studio/types";
+import type { EvalCase, RegisteredAgent, WorkspaceSourceType } from "@context-studio/types";
 import { db } from "../lib/db.js";
 import { SERVER_ROOT } from "../lib/config.js";
 import { BUILTIN_AGENTS } from "../lib/agents.js";
@@ -31,6 +31,7 @@ export interface WorkspaceContext {
   git: GitService;
   documents: string[];
   agents: RegisteredAgent[];
+  evals: EvalCase[];
 }
 
 export class WorkspaceManager {
@@ -83,9 +84,10 @@ export class WorkspaceManager {
   /** Re-read the document + agent mapping (e.g. after a merge changed it). */
   async refreshDiscovery(): Promise<void> {
     if (this.ctx) {
-      const { documents, agents } = await this.discover(this.ctx.git);
+      const { documents, agents, evals } = await this.discover(this.ctx.git);
       this.ctx.documents = documents;
       this.ctx.agents = agents;
+      this.ctx.evals = evals;
     }
   }
 
@@ -107,7 +109,7 @@ export class WorkspaceManager {
       await git.ensureRepo();
     }
 
-    const { documents, agents } = await this.discover(git);
+    const { documents, agents, evals } = await this.discover(git);
     return {
       sourceType: input.sourceType,
       location: input.location,
@@ -115,30 +117,32 @@ export class WorkspaceManager {
       git,
       documents,
       agents,
+      evals,
     };
   }
 
   /** Read .contextstudio.yml; fall back to tracked files + built-in agents. */
   private async discover(
     git: GitService,
-  ): Promise<{ documents: string[]; agents: RegisteredAgent[] }> {
+  ): Promise<{ documents: string[]; agents: RegisteredAgent[]; evals: EvalCase[] }> {
     const raw = await git.readDocument(MAIN_BRANCH, CONFIG_FILE);
     if (raw) {
       try {
         const parsed = parseYaml(raw) as {
           documents?: string[];
           agents?: RegisteredAgent[];
+          evals?: EvalCase[];
         };
         const documents = parsed.documents?.length
           ? parsed.documents
           : await git.listDocuments();
         const agents = parsed.agents?.length ? parsed.agents : BUILTIN_AGENTS;
-        return { documents, agents };
+        return { documents, agents, evals: parsed.evals ?? [] };
       } catch (err) {
         console.error(`[workspace] invalid ${CONFIG_FILE}, using fallbacks:`, err);
       }
     }
     const documents = (await git.listDocuments()).filter((p) => p !== CONFIG_FILE);
-    return { documents, agents: BUILTIN_AGENTS };
+    return { documents, agents: BUILTIN_AGENTS, evals: [] };
   }
 }

@@ -73,6 +73,21 @@ agents:
     watches: [compliance, regulation, gdpr, retention, consent]
     baseSeverity: high
     reads: [policies/refunds.md]
+
+# Context-regression evals: a change can't be approved while these fail.
+evals:
+  - id: standard-window-present
+    agentId: agent-refunds
+    question: What is the standard refund window?
+    expectContains: ["30 days"]
+  - id: escalation-path-present
+    agentId: agent-support
+    question: Where do disputed refunds go?
+    expectContains: ["Support lead"]
+  - id: payment-method-rule-present
+    agentId: agent-billing
+    question: How are refunds issued?
+    expectContains: ["original payment method"]
 `;
 
 const BASELINE = `# Refund Policy

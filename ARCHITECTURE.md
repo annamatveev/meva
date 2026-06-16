@@ -99,6 +99,16 @@ Translates UI verbs into raw Git:
 - Reads stay open (LAN-trusted); writes/merges are gated. Login at
   `apps/web/app/login`; session in client `lib/auth.ts`.
 
+### 8. Evals-as-publish-gate — `apps/server/src/services/EvalService.ts`
+- Context-regression evals (versioned in `.contextstudio.yml` `evals`): each
+  case asserts an agent's *resulting* context still contains the facts it needs
+  (`expectContains`) and none it must not (`expectNotContains`).
+- Evaluated against the PR's proposed state (changed doc from the draft branch).
+  **Failing evals block approval** (409 `EVALS_FAILED`); `request_changes` /
+  `reject` stay allowed.
+- Deterministic by design — the seam where real LLM-behavior evals plug in.
+  Surfaced on the CPR screen (`EvalsPanel`); `GET /api/context/pr/:id/evals`.
+
 ## Tech stack
 
 | Layer    | Choice                                            |

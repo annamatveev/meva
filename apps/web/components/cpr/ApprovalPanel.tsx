@@ -53,7 +53,9 @@ export function ApprovalPanel({ pr }: { pr: ContextPR }) {
       setError(
         res.code === "BLAST_ACK_REQUIRED"
           ? "Acknowledge the high blast-radius warning to merge."
-          : res.error,
+          : res.code === "EVALS_FAILED"
+            ? "Context evals are failing — see the Evals panel. Resolve regressions before approving."
+            : res.error,
       );
       return;
     }

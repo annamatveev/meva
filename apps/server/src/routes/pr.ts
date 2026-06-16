@@ -21,6 +21,7 @@ import {
   PrService,
 } from "../services/PrService.js";
 import { computeSemanticDiff } from "../services/SemanticDiffService.js";
+import { EvalService } from "../services/EvalService.js";
 import { DistributionService } from "../services/DistributionService.js";
 import type { SigningService } from "../services/SigningService.js";
 import { AuthService, bearer } from "../services/AuthService.js";
@@ -69,6 +70,18 @@ export function createPrRouter(
     }
   });
 
+  // Run the regression evals for a PR's proposed change (read-only).
+  router.get("/:id/evals", async (req, res) => {
+    const ctx = requireWorkspace(wm, res);
+    if (!ctx) return;
+    try {
+      res.json(await new EvalService(ctx).runForPr(req.params.id));
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to run evals." });
+    }
+  });
+
   const approvalSchema = z.object({
     action: z.enum(["approve", "request_changes", "reject"]),
     comment: z.string().optional(),
@@ -99,6 +112,21 @@ export function createPrRouter(
       res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
+
+    // Evals gate: a change cannot be approved while its context-regression
+    // evals fail. (request_changes / reject are always allowed.)
+    if (parsed.data.action === "approve") {
+      const report = await new EvalService(ctx).runForPr(req.params.id);
+      if (!report.passed) {
+        res.status(409).json({
+          error: "Context evals failed — resolve regressions before approving.",
+          code: "EVALS_FAILED",
+          report,
+        });
+        return;
+      }
+    }
+
     try {
       const result = await new PrService(ctx.git).applyApproval({
         prId: req.params.id,

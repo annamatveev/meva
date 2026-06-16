@@ -3,6 +3,7 @@ import { getContextPr } from "@/lib/api";
 import { PRHeader } from "@/components/cpr/PRHeader";
 import { SemanticDiff } from "@/components/cpr/SemanticDiff";
 import { BlastRadius } from "@/components/cpr/BlastRadius";
+import { EvalsPanel } from "@/components/cpr/EvalsPanel";
 import { ApprovalPanel } from "@/components/cpr/ApprovalPanel";
 
 export const dynamic = "force-dynamic";
@@ -47,6 +48,7 @@ export default async function ContextPrPage({
         </div>
         <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start">
           <BlastRadius blast={pr.blastRadius} />
+          <EvalsPanel prId={pr.id} />
           <ApprovalPanel pr={pr} />
         </aside>
       </div>

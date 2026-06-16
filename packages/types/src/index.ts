@@ -284,6 +284,40 @@ export interface RegisteredAgent {
 }
 
 // ---------------------------------------------------------------------------
+// Evals (Module 8 — regression gate on context changes)
+// ---------------------------------------------------------------------------
+
+/**
+ * A context-regression test for an agent. Asserts the agent's resulting context
+ * still supports an answer: it must contain every `expectContains` phrase and
+ * none of `expectNotContains`. (Deterministic; the seam where real LLM-behavior
+ * evals would plug in.)
+ */
+export interface EvalCase {
+  id: string;
+  agentId: string;
+  question?: string;
+  expectContains?: string[];
+  expectNotContains?: string[];
+}
+
+export interface EvalResult {
+  id: string;
+  agentId: string;
+  question?: string;
+  passed: boolean;
+  /** expectContains phrases that were missing from the proposed context. */
+  missing: string[];
+  /** expectNotContains phrases that were present (should not be). */
+  forbidden: string[];
+}
+
+export interface EvalReport {
+  passed: boolean;
+  results: EvalResult[];
+}
+
+// ---------------------------------------------------------------------------
 // Distribution (Module 6 — publishing signed per-agent slices)
 // ---------------------------------------------------------------------------
 
