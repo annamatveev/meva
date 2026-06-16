@@ -6,7 +6,7 @@ export function SectionLabel({ n, children }: { n: number; children: React.React
   const num = String(n).padStart(2, "0");
   return (
     <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
-      <span className="text-brand">§&nbsp;{num}</span>
+      <span className="text-brand dark:text-accent">§&nbsp;{num}</span>
       <span className="h-px w-6 bg-line" aria-hidden />
       <span>{children}</span>
     </div>

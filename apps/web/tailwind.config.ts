@@ -23,19 +23,22 @@ const config: Config = {
           soft: "var(--brand-soft)",
           ink: "var(--brand-ink)",
         },
+        accent: "var(--accent)",
         // Semantic accents (work on both themes).
         added: { accent: "#1f9d57", inline: "var(--added-inline)" },
         removed: { accent: "#d2483b", inline: "var(--removed-inline)" },
         modified: { accent: "#c98a1e" },
       },
       fontFamily: {
-        sans: ["ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
+        sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "var(--font-sans)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       boxShadow: {
         card: "0 1px 2px rgba(16,18,28,0.04), 0 1px 3px rgba(16,18,28,0.06)",
       },
       backgroundImage: {
-        "brand-gradient": "linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)",
+        "brand-gradient": "linear-gradient(135deg, var(--brand-ink) 0%, var(--accent) 130%)",
       },
     },
   },

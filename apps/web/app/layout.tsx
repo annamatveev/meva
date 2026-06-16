@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
+import { Inter, Space_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { Logo } from "@/components/brand/Logo";
+
+// Bold grotesk display + clean sans body + characterful mono labels — the
+// landing page's editorial-technical type pairing.
+const display = Space_Grotesk({ subsets: ["latin"], variable: "--font-display" });
+const body = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const mono = Space_Mono({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-mono" });
 import { ThemeToggle } from "@/components/brand/ThemeToggle";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -12,7 +19,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${display.variable} ${body.variable} ${mono.variable}`}
+    >
       <head>
         {/* Apply saved/system theme before paint to avoid a flash. */}
         <script src="/theme-init.js" />
@@ -23,9 +34,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 py-3">
               <a href="/" className="flex items-center gap-2.5">
                 <Logo size={28} />
-                <span className="flex items-baseline gap-1.5">
-                  <span className="text-lg font-bold tracking-tight">meva</span>
-                  <span className="hidden text-xs text-muted sm:inline">Context Studio</span>
+                <span className="flex items-baseline gap-2">
+                  <span className="font-mono text-lg font-bold uppercase tracking-tight">meva</span>
+                  <span className="hidden font-mono text-[11px] uppercase tracking-[0.15em] text-muted sm:inline">
+                    · Memory Vault
+                  </span>
                 </span>
               </a>
               <nav className="ml-3 flex items-center gap-0.5 text-sm">
