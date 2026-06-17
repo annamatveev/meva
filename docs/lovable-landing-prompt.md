@@ -1,6 +1,6 @@
-# Lovable prompt — correct the meva landing description
+# Lovable prompt — correct the bravo landing description
 
-Paste the prompt below into the Lovable project for the meva landing page. It
+Paste the prompt below into the Lovable project for the bravo landing page. It
 keeps the current visual design and voice, and rewrites the copy so it matches
 what the product actually does (and marks what's roadmap vs shipped).
 
@@ -13,8 +13,8 @@ forever." colophon. Only change the **copy/description**, not the layout or pale
 
 Update the wording so it accurately describes the product:
 
-**What meva is (use near the top):**
-"meva is a Context Management IDE. Non-technical Context Owners — analysts,
+**What bravo is (use near the top):**
+"bravo is a Context Management IDE. Non-technical Context Owners — analysts,
 compliance, support leads — author and approve the knowledge that feeds your AI
 agents, with full version history underneath but no Git to learn."
 
@@ -29,14 +29,14 @@ agents, with full version history underneath but no Git to learn."
 pills into "Available now" and "On the roadmap":
 - Available now: **CSV export**, **Webhooks**, **Slack** (incoming webhook),
   and **agent SDKs** — agents in LangChain, LlamaIndex, Mastra, the Vercel AI
-  SDK, OpenAI, or Anthropic consume meva's published context via a signed bundle
+  SDK, OpenAI, or Anthropic consume bravo's published context via a signed bundle
   + a small loader (no rewrite).
 - On the roadmap: **Google SSO**, **Okta**, **Email digests**.
 Keep the headline "Drops into the stack your team already runs."
 
 **Keep the §08 colophon** ("One container. Your data. Your reviewers. Apache-2.0,
 no SaaS, no telemetry. The ledger is yours to keep.") and the
-`docker pull ghcr.io/meva/studio` / "GET MEVA →" CTA — these match the product
+`docker pull ghcr.io/bravo/studio` / "GET BRAVO →" CTA — these match the product
 (it's a single self-hosted container with all state local).
 
 Do not invent features that don't exist; if unsure, prefer the roadmap column.

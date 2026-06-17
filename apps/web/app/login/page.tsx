@@ -42,7 +42,7 @@ export default function LoginPage() {
     <div className="mx-auto max-w-md space-y-6">
       <div className="space-y-2">
         <SectionLabel n={0}>Sign in</SectionLabel>
-        <h1 className="text-2xl font-semibold tracking-tight">Welcome to meva</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Welcome to bravo</h1>
         <p className="text-sm text-muted">Sign in to review and authorize context changes.</p>
       </div>
 

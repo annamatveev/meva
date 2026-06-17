@@ -1,9 +1,9 @@
 openapi: 3.1.0
 info:
-  title: meva API
+  title: bravo API
   version: 0.1.0
   description: >
-    The meva backend (apps/server). A Context Management IDE over a hidden Git
+    The bravo backend (apps/server). A Context Management IDE over a hidden Git
     repo. Reads are open (LAN-trusted); writes/merges are gated by role
     (owner / reviewer / viewer). Agents authenticate with an API key and may
     only open change requests.

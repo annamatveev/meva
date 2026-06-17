@@ -38,7 +38,7 @@ every autosave into one semantic commit on `main` and deletes the branch.
 - A change-request **dashboard** at `/` lists all CPRs with a governance snapshot.
 
 **Module 5 — Workspace binding** (`/setup`):
-- meva binds to an **external** context store (local path or git remote) and
+- bravo binds to an **external** context store (local path or git remote) and
   keeps only a disposable working copy — it never owns the files. Layout + agent
   mapping come from a versioned `.contextstudio.yml`.
 
@@ -62,7 +62,7 @@ every autosave into one semantic commit on `main` and deletes the branch.
 - **Webhooks / Slack** — set `CONTEXT_WEBHOOK_URL` to receive a POST on PR
   opened/merged and ticket opened. A Slack incoming-webhook URL gets Slack's
   `{ text }` shape; any other URL gets a structured JSON event.
-- **Agent SDK loader** — `clients/meva-context.mjs` turns a synced bundle into a
+- **Agent SDK loader** — `clients/bravo-context.mjs` turns a synced bundle into a
   system prompt for LangChain / LlamaIndex / Mastra / Vercel AI SDK / OpenAI /
   Anthropic agents.
 - SSO (Okta/Google) and email digests are roadmap — they need your IdP / SMTP.

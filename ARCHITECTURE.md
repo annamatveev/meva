@@ -69,7 +69,7 @@ Translates UI verbs into raw Git:
 - Surfaced at `apps/web/app/governance`.
 
 ### 5. Workspace binding — `apps/server/src/services/WorkspaceManager.ts`
-- meva does not own the context. It binds to an **external store** via a saved
+- bravo does not own the context. It binds to an **external store** via a saved
   `Workspace` (location + identity); it holds at most a disposable working copy.
 - Two source types: **local** (operate on a directory path in place) or
   **remote** (clone a git remote into a scratch workdir, push approved `main`

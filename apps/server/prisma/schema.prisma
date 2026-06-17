@@ -15,7 +15,7 @@ datasource db {
 }
 
 // The connection to the external context store this instance manages.
-// meva holds at most a disposable working copy; the canonical content lives at
+// bravo holds at most a disposable working copy; the canonical content lives at
 // `location`. A single active workspace is supported (id = "default").
 model Workspace {
   id            String   @id @default("default")

@@ -1,5 +1,5 @@
 /**
- * meva demo recorder — drives the live demo and records a short, punchy
+ * bravo demo recorder — drives the live demo and records a short, punchy
  * walkthrough video (~10s) for the landing page. Smooth guide-cursor,
  * controlled pacing, repeatable, always in sync with the app.
  *
@@ -12,8 +12,8 @@
  *   DEMO_URL=http://localhost:3000 node scripts/demo-video.mjs    # local demo
  *   PACE=0.8 node scripts/demo-video.mjs                          # 20% faster
  *
- * Output: scripts/out/meva-demo.webm  (+ meva-demo.mp4, hard-capped at MAX_SECONDS).
- * Embed: <video src="/meva-demo.mp4" autoplay muted loop playsinline>
+ * Output: scripts/out/bravo-demo.webm  (+ bravo-demo.mp4, hard-capped at MAX_SECONDS).
+ * Embed: <video src="/bravo-demo.mp4" autoplay muted loop playsinline>
  */
 
 import { chromium } from "playwright";
@@ -24,7 +24,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(__dirname, "out");
-const BASE = (process.env.DEMO_URL ?? "https://annamatveev.github.io/meva").replace(/\/$/, "");
+const BASE = (process.env.DEMO_URL ?? "https://annamatveev.github.io/bravo").replace(/\/$/, "");
 const PACE = Number(process.env.PACE ?? 0.8); // global timing multiplier (<1 = faster)
 const MAX_SECONDS = Number(process.env.MAX_SECONDS ?? 10); // hard cap on the mp4
 
@@ -133,12 +133,12 @@ async function main() {
 
   const files = (await fs.readdir(OUT)).filter((f) => f.endsWith(".webm"));
   const latest = files.map((f) => path.join(OUT, f)).sort()[files.length - 1];
-  const webm = path.join(OUT, "meva-demo.webm");
+  const webm = path.join(OUT, "bravo-demo.webm");
   if (latest && latest !== webm) await fs.rename(latest, webm);
   console.log("done:", webm);
 
   // Convert + hard-cap at MAX_SECONDS so the landing clip is never longer.
-  const mp4 = path.join(OUT, "meva-demo.mp4");
+  const mp4 = path.join(OUT, "bravo-demo.mp4");
   const ff = spawnSync("ffmpeg", [
     "-y", "-i", webm, "-t", String(MAX_SECONDS), "-vf", "scale=1280:-2",
     "-c:v", "libx264", "-crf", "26", "-preset", "slow", "-an",

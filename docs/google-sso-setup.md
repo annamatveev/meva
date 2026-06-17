@@ -1,6 +1,6 @@
 # Google SSO + roles
 
-meva supports Google sign-in (OIDC authorization-code flow) with role-based
+bravo supports Google sign-in (OIDC authorization-code flow) with role-based
 permissions. Without it configured, the local **pick-user** login is used.
 
 ## Roles
@@ -25,7 +25,7 @@ can never approve.
    (use your real server origin in production).
 4. Copy the **Client ID** and **Client secret**.
 
-## Configure meva
+## Configure bravo
 
 Set these on the **server** (env / `docker-compose.yml`):
 
@@ -48,6 +48,6 @@ Once `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` are set, the login screen shows
 2. Google consent → callback `/api/context/auth/google/callback` exchanges the
    code, reads the verified email, and assigns a role (Owner if the email is in
    `CONTEXT_OWNER_EMAILS`, else the default role).
-3. meva issues a signed session token and redirects to the web app, which stores
+3. bravo issues a signed session token and redirects to the web app, which stores
    it. The acting user — and what they're allowed to do — is derived from that
    token on every request.

@@ -37,7 +37,7 @@ jobs:
         env:
           STATIC_EXPORT: "1"
           NEXT_PUBLIC_DEMO: "1"
-          NEXT_PUBLIC_BASE_PATH: "/meva" # repo name; change for a different repo / custom domain
+          NEXT_PUBLIC_BASE_PATH: "/bravo" # repo name; change for a different repo / custom domain
         run: pnpm --filter @context-studio/web build
       - run: touch apps/web/out/.nojekyll
       - uses: actions/upload-pages-artifact@v3

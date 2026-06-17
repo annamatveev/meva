@@ -1,6 +1,6 @@
 # Lovable prompt — add a "Performance / out of the request path" box
 
-Paste into the meva landing project. Adds a box that answers "doesn't this slow
+Paste into the bravo landing project. Adds a box that answers "doesn't this slow
 the agents down?" Keeps the design and voice.
 
 ---
@@ -16,9 +16,9 @@ Eyebrow (mono, green): "§ 07b — OUT OF THE PATH"
 Heading (grotesk, bold): "Zero runtime cost."
 
 Body:
-"Your agents read context from a local file — meva is never called while they
+"Your agents read context from a local file — bravo is never called while they
 work. No API hop, no lookup, no added latency. An agent answering a thousand
-requests an hour makes a thousand local reads and zero calls to meva."
+requests an hour makes a thousand local reads and zero calls to bravo."
 
 Sub-line (muted):
 "A new bundle is pulled and verified in the background (~1 ms of signature
@@ -33,10 +33,10 @@ Add one closing line (muted):
 "The only thing that takes time is a change going live — that's the human review
 you asked for, and it's tunable (seconds, webhook-triggered, or auto-approved
 for low-risk edits). Fast-changing runtime memory stays in the agent and never
-touches meva."
+touches bravo."
 
 Optionally a mono diagram line:
-"request → agent → local file   (meva is off to the side, not in the loop)"
+"request → agent → local file   (bravo is off to the side, not in the loop)"
 
 Do not invent features. Keep it accurate: agents read a published local bundle;
-meva isn't in the inference path; verification is one-time at sync.
+bravo isn't in the inference path; verification is one-time at sync.

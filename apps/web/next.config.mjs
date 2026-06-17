@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 
 // For the GitHub Pages demo we produce a fully static export. A project repo is
-// served from a subpath (e.g. /meva), so basePath must be set. Gated behind
+// served from a subpath (e.g. /bravo), so basePath must be set. Gated behind
 // STATIC_EXPORT so the normal SSR app is unaffected.
 const isExport = process.env.STATIC_EXPORT === "1";
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";

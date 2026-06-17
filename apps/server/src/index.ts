@@ -19,7 +19,7 @@ import { AuthService } from "./services/AuthService.js";
 import { startFreshnessWorker } from "./worker.js";
 
 async function main() {
-  // The workspace binds meva to an external context store. Until configured,
+  // The workspace binds bravo to an external context store. Until configured,
   // domain routes return 409 and the UI shows the setup wizard.
   const wm = new WorkspaceManager();
   await wm.init();

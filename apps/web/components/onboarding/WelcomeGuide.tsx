@@ -45,9 +45,9 @@ export function WelcomeGuide() {
         Got it ✕
       </button>
 
-      <h2 className="text-base font-semibold">Welcome to meva</h2>
+      <h2 className="text-base font-semibold">Welcome to bravo</h2>
       <p className="mt-1 max-w-2xl text-sm text-muted">
-        meva is where you author and approve the context that feeds your AI agents — with full
+        bravo is where you author and approve the context that feeds your AI agents — with full
         version history underneath, but no Git knowledge required. Every change flows through
         these steps:
       </p>

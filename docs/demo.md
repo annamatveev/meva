@@ -1,6 +1,6 @@
 # Demo page (public, no backend)
 
-A self-contained demo of the meva UI. With `NEXT_PUBLIC_DEMO=1`, the web app
+A self-contained demo of the bravo UI. With `NEXT_PUBLIC_DEMO=1`, the web app
 serves **sample data** and **simulates writes** instead of calling the backend —
 no server, no git, no database. Nothing persists; every reload resets. Safe to
 host publicly or embed next to the landing page.
@@ -23,21 +23,21 @@ publishes it to Pages on every push to `main`.
 One-time setup:
 1. Repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 2. Push to `main` (or run the workflow manually from the Actions tab).
-3. The demo goes live at **`https://<owner>.github.io/meva/`**
-   (for this repo: `https://annamatveev.github.io/meva/`).
+3. The demo goes live at **`https://<owner>.github.io/bravo/`**
+   (for this repo: `https://annamatveev.github.io/bravo/`).
 
-How it's built: `STATIC_EXPORT=1 NEXT_PUBLIC_DEMO=1 NEXT_PUBLIC_BASE_PATH=/meva
+How it's built: `STATIC_EXPORT=1 NEXT_PUBLIC_DEMO=1 NEXT_PUBLIC_BASE_PATH=/bravo
 pnpm --filter @context-studio/web build` → `apps/web/out/`. The `basePath` is
-`/meva` because a project repo is served from a subpath. If you rename the repo
+`/bravo` because a project repo is served from a subpath. If you rename the repo
 or use a custom domain, update `NEXT_PUBLIC_BASE_PATH` in the workflow (set it
 to empty for a custom domain / user-root page).
 
 To preview the static export locally:
 
 ```bash
-STATIC_EXPORT=1 NEXT_PUBLIC_DEMO=1 NEXT_PUBLIC_BASE_PATH=/meva \
+STATIC_EXPORT=1 NEXT_PUBLIC_DEMO=1 NEXT_PUBLIC_BASE_PATH=/bravo \
   pnpm --filter @context-studio/web build
-npx serve apps/web/out   # then open http://localhost:3000/meva/
+npx serve apps/web/out   # then open http://localhost:3000/bravo/
 ```
 
 ## Or deploy to Vercel
@@ -61,11 +61,11 @@ node scripts/demo-video.mjs                 # records the live Pages demo
 # DEMO_URL=http://localhost:3000 node scripts/demo-video.mjs   # local demo
 ```
 
-Output: `scripts/out/meva-demo.webm` (+ `meva-demo.mp4` if `ffmpeg` is
+Output: `scripts/out/bravo-demo.webm` (+ `bravo-demo.mp4` if `ffmpeg` is
 installed). Embed on the landing with:
 
 ```html
-<video src="/meva-demo.mp4" autoplay muted loop playsinline></video>
+<video src="/bravo-demo.mp4" autoplay muted loop playsinline></video>
 ```
 
 ## What's mocked

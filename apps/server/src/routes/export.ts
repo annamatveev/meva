@@ -81,7 +81,7 @@ export function createExportRouter(wm: WorkspaceManager): Router {
       const csv = [header, ...rows].map((r) => r.map(csvCell).join(",")).join("\n");
       res
         .type("text/csv")
-        .set("Content-Disposition", "attachment; filename=meva-ledger.csv")
+        .set("Content-Disposition", "attachment; filename=bravo-ledger.csv")
         .send(csv);
     } catch (err) {
       console.error(err);
