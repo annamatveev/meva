@@ -35,7 +35,6 @@ export default async function Dashboard() {
   }
 
   const openCRs = prs.filter((p) => !["merged", "rejected"].includes(p.status)).length;
-  const neverRead = health.cold.filter((c) => c.reads === 0).length;
 
   return (
     <div className="space-y-8">
@@ -50,11 +49,9 @@ export default async function Dashboard() {
         </p>
       </div>
 
-      {/* drill-in stat tiles */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {/* top-line KPIs — kept distinct from the File health view below */}
+      <div className="grid max-w-md grid-cols-2 gap-3">
         <StatTile label={`Reads · ${health.periodDays}d`} value={health.totalReads.toLocaleString()} tone="text-brand" />
-        <StatTile label="Unanswered asks" value={health.totalMisses} tone="text-rose-700 dark:text-rose-300" href="/inbox?filter=missing" />
-        <StatTile label="Never-read areas" value={neverRead} tone="text-amber-700 dark:text-amber-300" href="/inbox?filter=unread" />
         <StatTile label="Open change requests" value={openCRs} tone="text-emerald-700 dark:text-emerald-300" href="/inbox?filter=change_request" />
       </div>
 
