@@ -35,6 +35,15 @@ const CONF: Record<Confidence, { rail: string; dot: string; short: string; label
   agent_unverified: { rail: "border-amber-500", dot: "#f59e0b", short: "AI · unverified", label: "AI-written · not yet reviewed", cls: "text-amber-600 dark:text-amber-400" },
 };
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/** Exact, locale-stable date (UTC) so it never mismatches between build and client. */
+function fullDate(iso: string): string {
+  const d = new Date(iso);
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()} · ${hh}:${mm} UTC`;
+}
+
 /** Serialize parsed blocks back to Markdown — used when inserting a new line. */
 function serializeBlocks(blocks: ClientBlock[]): string {
   return (
@@ -432,11 +441,30 @@ function Block({
         showBlame ? "grid-cols-[7.5rem_minmax(0,1fr)] gap-2 pl-2.5" : "grid-cols-1 pl-3"
       }`}
     >
-      {/* Blame gutter — author right next to the colour rail (git-blame style). */}
+      {/* Blame gutter — author next to the rail; hover for the full provenance. */}
       {showBlame && (
-        <aside className="min-w-0 pt-0.5 text-[11px] leading-snug text-muted" title={who ?? "unattributed"}>
-          <span className={`block truncate ${conf === "agent_unverified" ? "text-amber-600 dark:text-amber-400" : ""}`}>
-            {who ?? "unattributed"}
+        <aside className="min-w-0 pt-0.5 text-[11px] leading-snug">
+          <span className="group/author relative inline-block max-w-full align-top">
+            <span className={`block cursor-default truncate ${conf === "agent_unverified" ? "text-amber-600 dark:text-amber-400" : "text-muted"}`}>
+              {who ?? "unattributed"}
+            </span>
+            {attribution && meta && (
+              <span className="absolute left-0 top-full z-30 hidden w-64 rounded-lg border border-line bg-surface p-2.5 text-xs shadow-lg group-hover/author:block">
+                <span className={`flex items-center gap-1.5 font-medium ${meta.cls}`}>
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: meta.dot }} />
+                  {conf === "agent_unverified" ? "AI edit · not yet reviewed" : conf === "agent_approved" ? "AI edit · human-approved" : "Manual edit · human"}
+                </span>
+                <span className="mt-1 block text-muted">
+                  {conf === "agent_unverified"
+                    ? `Written by ${attribution.author.name}`
+                    : `Verified by ${attribution.verifiedBy ?? attribution.author.name}${attribution.author.kind === "agent" ? ` · written by ${attribution.author.name}` : ""}`}
+                </span>
+                <span className="mt-1 block text-muted">{fullDate(attribution.mergedAt)}</span>
+                <Link href={`/pr/${attribution.prId}`} className="mt-1.5 block font-medium text-brand hover:underline">
+                  {attribution.prTitle} ({attribution.prId}) →
+                </Link>
+              </span>
+            )}
           </span>
         </aside>
       )}
