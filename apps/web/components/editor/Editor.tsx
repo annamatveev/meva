@@ -278,13 +278,13 @@ export function Editor({
         </div>
       </div>
 
-      {/* Floating select toolbar */}
+      {/* Floating select toolbar — same icon buttons as the per-line hover bar. */}
       {sel && !composing && (
         <div className="fixed z-40 -translate-x-1/2 -translate-y-full" style={{ left: sel.x, top: sel.y - 8 }}>
-          <div className="flex items-center gap-0.5 rounded-lg border border-line bg-surface p-1 text-sm shadow-lg">
-            <IconBtn title="Edit" onClick={() => { setComposing({ blockIdx: sel.blockIdx, quote: sel.quote, mode: "edit" }); setDraftText(sel.quote); setSel(null); }}>✏️ Edit</IconBtn>
-            <IconBtn title="Note" onClick={() => { setComposing({ blockIdx: sel.blockIdx, quote: sel.quote, mode: "note" }); setDraftText(""); setSel(null); }}>💬 Note</IconBtn>
-            <IconBtn title="Delete" onClick={() => add({ blockIdx: sel.blockIdx, quote: sel.quote, label: "Delete", color: C.rose, style: "strike" })}>🗑️ Delete</IconBtn>
+          <div className="flex items-center gap-0.5 rounded-lg border border-line bg-surface p-1 shadow-lg">
+            <RowBtn title="Edit selection" onClick={() => { setComposing({ blockIdx: sel.blockIdx, quote: sel.quote, mode: "edit" }); setDraftText(sel.quote); setSel(null); }}><Icon name="edit" /></RowBtn>
+            <RowBtn title="Note on selection" onClick={() => { setComposing({ blockIdx: sel.blockIdx, quote: sel.quote, mode: "note" }); setDraftText(""); setSel(null); }}><Icon name="note" /></RowBtn>
+            <RowBtn title="Delete selection" danger onClick={() => add({ blockIdx: sel.blockIdx, quote: sel.quote, label: "Delete", color: C.rose, style: "strike" })}><Icon name="trash" /></RowBtn>
           </div>
         </div>
       )}
@@ -326,19 +326,6 @@ export function Editor({
         />
       )}
     </div>
-  );
-}
-
-function IconBtn({ title, active, onClick, children }: { title: string; active?: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      title={title}
-      onMouseDown={(e) => e.preventDefault()}
-      onClick={onClick}
-      className={`rounded-md px-2 py-1 text-base hover:bg-hover ${active ? "bg-brand/15 ring-1 ring-brand/40" : ""}`}
-    >
-      {children}
-    </button>
   );
 }
 
