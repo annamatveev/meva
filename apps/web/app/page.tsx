@@ -55,7 +55,6 @@ export default async function Dashboard() {
     { label: "Stale", value: insights.summary.stale, sub: "Past their review window", href: "/inbox?filter=ticket", color: "#f59e0b" },
     { label: "Rarely read", value: insights.summary.rarelyRead, sub: "Candidates to trim", href: "/inbox?filter=unread", color: "#64748b" },
   ];
-  const maxFileReads = Math.max(...insights.files.map((f) => f.reads), 1);
 
   return (
     <div className="space-y-8">
@@ -126,16 +125,16 @@ export default async function Dashboard() {
           </span>
         </div>
         <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-card">
-          <div className="hidden grid-cols-[1fr_5rem_5rem_7rem_auto] gap-3 border-b border-line px-4 py-2 font-mono text-[10px] uppercase tracking-[0.15em] text-muted md:grid">
+          <div className="hidden grid-cols-[minmax(0,1fr)_4.5rem_4.5rem_8rem_12rem] items-center gap-4 border-b border-line px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.15em] text-muted md:grid">
             <span>File</span>
             <span className="text-right">Reads</span>
-            <span>Trend</span>
+            <span className="text-center">Trend</span>
             <span>Provenance</span>
-            <span>Signals</span>
+            <span className="text-right">Signals</span>
           </div>
           <div className="divide-y divide-line">
             {insights.files.map((f) => (
-              <FileRow key={f.path} f={f} maxReads={maxFileReads} />
+              <FileRow key={f.path} f={f} />
             ))}
           </div>
         </div>
@@ -159,12 +158,15 @@ const FLAG: Record<InsightFlag, { label: string; color: string }> = {
   hot: { label: "Hot", color: "var(--brand)" },
 };
 
-function FileRow({ f, maxReads }: { f: FileInsight; maxReads: number }) {
+function FileRow({ f }: { f: FileInsight }) {
   const name = f.path.split("/").slice(1).join("/") || f.path;
+  // Signals are attention flags only: drop "hot" (good, not actionable — the
+  // reads number already shows it) and "open_requests" (its own badge).
+  const signals = f.flags.filter((fl) => fl !== "open_requests" && fl !== "hot");
   return (
     <Link
       href={`/edit/${f.path}`}
-      className="grid grid-cols-1 items-center gap-2 px-4 py-3 transition hover:bg-hover md:grid-cols-[1fr_5rem_5rem_7rem_auto] md:gap-3"
+      className="grid grid-cols-1 items-center gap-3 px-4 py-3 transition hover:bg-hover md:grid-cols-[minmax(0,1fr)_4.5rem_4.5rem_8rem_12rem] md:gap-4"
     >
       <div className="min-w-0">
         <div className="flex items-center gap-2">
@@ -176,36 +178,32 @@ function FileRow({ f, maxReads }: { f: FileInsight; maxReads: number }) {
         )}
       </div>
 
-      <div className="md:text-right">
-        <div className="text-sm font-semibold tabular-nums">{f.reads.toLocaleString()}</div>
-        <div className="mt-0.5 h-1 rounded-full bg-surface2 md:ml-auto md:w-16">
-          <div className="h-1 rounded-full bg-brand" style={{ width: `${(f.reads / maxReads) * 100}%` }} />
-        </div>
-      </div>
+      <div className="text-sm font-semibold tabular-nums md:text-right">{f.reads.toLocaleString()}</div>
 
-      <MiniSpark values={f.trend} />
+      <div className="flex justify-center">
+        <MiniSpark values={f.trend} />
+      </div>
 
       <ProvenanceBar lines={f.lines} />
 
-      <div className="flex flex-wrap gap-1">
-        {f.openRequests > 0 && (
-          <span className="rounded-full px-1.5 py-0.5 text-[10px] font-medium" style={{ background: "rgba(9,105,218,0.12)", color: "#0969da" }}>
-            {f.openRequests} open
-          </span>
-        )}
-        {f.flags
-          .filter((fl) => fl !== "open_requests")
-          .map((fl) => (
-            <span
-              key={fl}
-              className="rounded-full px-1.5 py-0.5 text-[10px] font-medium"
-              style={{ background: hexA(FLAG[fl].color, 0.12), color: FLAG[fl].color }}
-            >
-              {FLAG[fl].label}
-            </span>
-          ))}
+      <div className="flex flex-wrap gap-1 md:justify-end">
+        {f.openRequests > 0 && <Chip color="#0969da" label={`${f.openRequests} open`} />}
+        {signals.map((fl) => (
+          <Chip key={fl} color={FLAG[fl].color} label={FLAG[fl].label} />
+        ))}
       </div>
     </Link>
+  );
+}
+
+function Chip({ color, label }: { color: string; label: string }) {
+  return (
+    <span
+      className="whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+      style={{ background: hexA(color, 0.12), color }}
+    >
+      {label}
+    </span>
   );
 }
 
@@ -220,7 +218,7 @@ function MiniSpark({ values }: { values: number[] }) {
     .join(" ");
   const up = values[values.length - 1]! >= values[0]!;
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-16" preserveAspectRatio="none" aria-hidden>
+    <svg viewBox={`0 0 ${w} ${h}`} className="h-5 w-16" preserveAspectRatio="none" aria-hidden>
       <polyline
         points={pts}
         fill="none"

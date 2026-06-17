@@ -9,6 +9,9 @@ const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@context-studio/types"],
+  // Opt-in alternate build dir so `next build` can run while `next dev` holds
+  // the default `.next` (avoids the cache collision). Inert unless set.
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   ...(isExport
     ? {
         output: "export",
