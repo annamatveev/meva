@@ -45,7 +45,7 @@ export function EvalsConfig() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-2">
-          <SectionLabel n={1}>Quality gates</SectionLabel>
+          <SectionLabel n={1}>Quality</SectionLabel>
           <h1 className="text-3xl font-semibold tracking-tight">Merge gates</h1>
           <p className="max-w-prose text-sm text-muted">
             Per-source checks that must pass before a change to that source can merge. They aren’t context-only —

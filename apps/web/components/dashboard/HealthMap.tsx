@@ -135,19 +135,24 @@ export function HealthMap({ files, missing }: { files: FileInsight[]; missing: M
         </div>
 
         <div className="rounded-xl border border-line bg-surface p-4 shadow-card">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-muted">Top gaps · unanswered asks</span>
-            <Link href="/inbox?filter=missing" className="text-xs text-brand hover:underline">all →</Link>
+          <div className="mb-2 font-mono text-[11px] uppercase tracking-[0.15em] text-muted">
+            Top gaps · unanswered asks
           </div>
           <ul className="space-y-1.5">
             {missing.length === 0 && <li className="text-xs text-muted">No unanswered asks.</li>}
-            {missing.slice(0, 4).map((mm) => (
+            {missing.slice(0, 5).map((mm) => (
               <li key={mm.query} className="flex items-center justify-between gap-2 text-xs">
                 <span className="min-w-0 truncate">{mm.query}</span>
                 <span className="shrink-0 font-medium text-rose-600 dark:text-rose-300">{mm.misses}× missed</span>
               </li>
             ))}
           </ul>
+          <Link
+            href="/inbox?filter=missing"
+            className="mt-2 block border-t border-line pt-2 text-xs font-medium text-brand hover:underline"
+          >
+            View all unanswered asks →
+          </Link>
         </div>
       </div>
     </div>

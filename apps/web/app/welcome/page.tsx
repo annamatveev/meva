@@ -16,7 +16,7 @@ const FLOW = [
 const PAGES: Array<[string, string, string]> = [
   ["Home · Health", "/", "What your agent reads, ignores, and couldn’t find."],
   ["Change Requests", "/changes", "Review and approve proposed edits."],
-  ["Quality gates", "/evals", "Per-source checks that must pass before a change can merge."],
+  ["Quality", "/evals", "Per-source checks that must pass before a change can merge."],
   ["Releases", "/distribution", "Signed, per-agent bundles your agents pull."],
   ["Library", "/edit/policies/refunds.md", "Every file with its layers — who wrote it, usage, open requests. Draft a change and propose it."],
   ["Workspace", "/setup", "Connect your typed sources (context / skills / memory)."],

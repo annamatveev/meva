@@ -22,7 +22,7 @@ export function EvalsPanel({ prId }: { prId: string }) {
   if (error) {
     return (
       <section className="rounded-xl border border-line bg-surface p-4 shadow-sm">
-        <h2 className="text-sm font-semibold">Quality gates</h2>
+        <h2 className="text-sm font-semibold">Quality</h2>
         <p className="mt-1 text-sm text-rose-600">{error}</p>
       </section>
     );
@@ -31,7 +31,7 @@ export function EvalsPanel({ prId }: { prId: string }) {
   if (!report) {
     return (
       <section className="rounded-xl border border-line bg-surface p-4 shadow-sm">
-        <h2 className="text-sm font-semibold">Quality gates</h2>
+        <h2 className="text-sm font-semibold">Quality</h2>
         <p className="mt-1 text-sm text-muted">Running…</p>
       </section>
     );
@@ -40,7 +40,7 @@ export function EvalsPanel({ prId }: { prId: string }) {
   if (report.results.length === 0) {
     return (
       <section className="rounded-xl border border-line bg-surface p-4 shadow-sm">
-        <h2 className="text-sm font-semibold">Quality gates</h2>
+        <h2 className="text-sm font-semibold">Quality</h2>
         <p className="mt-1 text-sm text-muted">No evals defined for this workspace.</p>
       </section>
     );
@@ -56,10 +56,10 @@ export function EvalsPanel({ prId }: { prId: string }) {
     >
       <div className="flex items-center justify-between">
         <h2 className="flex items-center gap-1.5 text-sm font-semibold">
-          <span aria-hidden>{report.passed ? "✓" : "⚠️"}</span> Quality gates
+          <span aria-hidden>{report.passed ? "✓" : "⚠️"}</span> Quality
           <Hint side="top">
             The changed source’s checks — that this change doesn’t drop facts your agents rely on.
-            Required checks must pass before approval. Configure them per source on the Quality gates page.
+            Required checks must pass before approval. Configure them per source on the Quality page.
           </Hint>
         </h2>
         <span className="text-xs font-medium">
@@ -92,7 +92,7 @@ export function EvalsPanel({ prId }: { prId: string }) {
       </ul>
 
       <Link href="/evals" className="mt-3 inline-block text-xs font-medium text-brand hover:underline">
-        Configure quality gates →
+        Configure quality checks →
       </Link>
     </section>
   );
