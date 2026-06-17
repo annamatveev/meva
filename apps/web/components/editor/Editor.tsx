@@ -78,12 +78,15 @@ export function Editor({
   files,
   currentPath,
   fileReads,
+  reads,
 }: {
   doc: DocumentView;
   files: Array<{ path: string; kind: string }>;
   currentPath: string;
   /** File-level read count (reads are tracked per file, not per line). */
   fileReads?: number;
+  /** Reads per file path — drives the navigator's read-heat markers. */
+  reads?: Record<string, number>;
 }) {
   const router = useRouter();
   const [content, setContent] = useState(doc.content);
@@ -230,7 +233,7 @@ export function Editor({
       <div className="flex min-h-0 flex-1 gap-4">
         {/* Files + outline */}
         <aside className="hidden w-48 shrink-0 overflow-y-auto pr-1 md:block">
-          <FileBrowser files={files} current={currentPath} />
+          <FileBrowser files={files} current={currentPath} reads={reads} />
           {mode === "edit" && (
             <div className="mt-5">
               <Outline blocks={blocks} />
@@ -350,7 +353,15 @@ export function Editor({
   );
 }
 
-function FileBrowser({ files, current }: { files: Array<{ path: string; kind: string }>; current: string }) {
+function FileBrowser({
+  files,
+  current,
+  reads,
+}: {
+  files: Array<{ path: string; kind: string }>;
+  current: string;
+  reads?: Record<string, number>;
+}) {
   const groups = useMemo(() => {
     const m = new Map<string, Array<{ path: string; kind: string }>>();
     for (const f of files) {
@@ -360,10 +371,14 @@ function FileBrowser({ files, current }: { files: Array<{ path: string; kind: st
     }
     return [...m.entries()];
   }, [files]);
+  const max = Math.max(...Object.values(reads ?? {}), 1);
 
   return (
     <aside className="space-y-3">
-      <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">Files</div>
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">Files</span>
+        <span className="font-mono text-[10px] uppercase tracking-wide text-muted">reads</span>
+      </div>
       {groups.map(([kind, list]) => (
         <div key={kind} className="space-y-1">
           <SourceChip kind={kind} />
@@ -371,20 +386,40 @@ function FileBrowser({ files, current }: { files: Array<{ path: string; kind: st
             {list.map((f) => {
               const active = f.path === current;
               const name = f.path.split("/").slice(1).join("/") || f.path;
+              const r = reads?.[f.path];
+              const known = typeof r === "number";
+              const never = known && r === 0;
+              // Read-heat dot: never-read = hollow rose ring; else indigo, denser with reads.
+              const dot = never
+                ? { background: "transparent", border: "1.5px solid #cf222e" }
+                : { background: `rgba(99,102,241,${0.2 + 0.8 * ((r ?? 0) / max)})`, border: "1.5px solid transparent" };
               return (
                 <Link
                   key={f.path}
                   href={`/edit/${f.path}`}
-                  className={`block truncate rounded-md px-2 py-1 text-sm transition ${active ? "bg-brand/10 font-medium text-ink" : "text-muted hover:bg-hover hover:text-ink"}`}
-                  title={f.path}
+                  className={`flex items-center gap-2 rounded-md px-2 py-1 text-sm transition ${active ? "bg-brand/10 font-medium text-ink" : "text-muted hover:bg-hover hover:text-ink"}`}
+                  title={`${f.path} — ${never ? "never read" : known ? `${r} reads` : "reads unknown"}`}
                 >
-                  {name}
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={dot} />
+                  <span className="min-w-0 flex-1 truncate">{name}</span>
+                  {known && (
+                    <span className={`shrink-0 text-[10px] tabular-nums ${never ? "font-medium text-rose-600 dark:text-rose-400" : "text-muted"}`}>
+                      {r}
+                    </span>
+                  )}
                 </Link>
               );
             })}
           </div>
         </div>
       ))}
+      <div className="flex items-center gap-1.5 px-1 pt-1 text-[10px] text-muted">
+        <span className="h-2 w-2 rounded-full" style={{ border: "1.5px solid #cf222e" }} />
+        never read
+        <span className="ml-1 h-2 w-2 rounded-full" style={{ background: "rgba(99,102,241,0.3)" }} />
+        <span className="h-2 w-2 rounded-full" style={{ background: "rgba(99,102,241,1)" }} />
+        more read
+      </div>
     </aside>
   );
 }

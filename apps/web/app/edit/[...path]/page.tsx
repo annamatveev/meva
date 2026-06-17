@@ -23,6 +23,7 @@ export default async function EditPage({
   let doc;
   let files: Array<{ path: string; kind: string }> = [];
   let fileReads: number | undefined;
+  let reads: Record<string, number> = {};
   try {
     const [d, f, insights] = await Promise.all([
       getDocumentView(documentPath, ACTING_USER),
@@ -32,6 +33,7 @@ export default async function EditPage({
     doc = d;
     files = f;
     fileReads = insights?.files.find((x) => x.path === documentPath)?.reads;
+    reads = Object.fromEntries((insights?.files ?? []).map((x) => [x.path, x.reads]));
   } catch {
     return <ErrorState title="Couldn’t reach the backend" body="Start the server and reload." />;
   }
@@ -45,7 +47,7 @@ export default async function EditPage({
     );
   }
 
-  return <Editor doc={doc} files={files} currentPath={documentPath} fileReads={fileReads} />;
+  return <Editor doc={doc} files={files} currentPath={documentPath} fileReads={fileReads} reads={reads} />;
 }
 
 function ErrorState({ title, body }: { title: string; body: string }) {
