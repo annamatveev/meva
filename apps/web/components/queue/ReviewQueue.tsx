@@ -289,7 +289,7 @@ function Row({ item }: { item: QueueItem }) {
         <div className="space-y-3 border-t border-line bg-surface2/40 px-5 py-3">
           {item.body && <p className="text-sm text-ink/90">{item.body}</p>}
           {item.quote && (
-            <div className="inline-block max-w-full rounded-lg border border-line bg-surface px-3 py-2 text-xs italic text-muted">“{item.quote}”</div>
+            <blockquote className="border-l-2 border-brand/40 pl-3 text-xs italic text-muted">{item.quote}</blockquote>
           )}
           <div className="flex flex-wrap gap-2">
             {links.map((l) => (
