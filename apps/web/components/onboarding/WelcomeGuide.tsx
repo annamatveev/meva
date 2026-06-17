@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 const KEY = "cs.welcome.dismissed";
 
 const STEPS = [
-  { n: 1, title: "Edit", body: "Draft a change in the Editor. Edits autosave privately." },
+  { n: 1, title: "Edit", body: "Draft a change in the Library. Edits autosave privately." },
   { n: 2, title: "Propose", body: "Open a Context PR — a reviewable change request." },
   { n: 3, title: "Review", body: "See the semantic diff, who/what it affects, and automated checks." },
   { n: 4, title: "Approve", body: "Required reviewers sign off; the change merges." },

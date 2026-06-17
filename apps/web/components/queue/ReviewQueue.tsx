@@ -55,8 +55,6 @@ const RANGE_MS: Record<Exclude<DateRange, "all">, number> = {
 
 export function ReviewQueue({ items }: { items: QueueItem[] }) {
   const [filter, setFilter] = useState<QueueKind | "all">("all");
-  const [view, setView] = useState<"list" | "focus">("list");
-  const [idx, setIdx] = useState(0);
 
   // Advanced filters + sort.
   const [query, setQuery] = useState("");
@@ -116,35 +114,18 @@ export function ReviewQueue({ items }: { items: QueueItem[] }) {
     setOwner("all");
     setImportance("all");
     setRange("all");
-    setIdx(0);
   };
-  const setF = (f: QueueKind | "all") => {
-    setFilter(f);
-    setIdx(0);
-  };
+  const setF = (f: QueueKind | "all") => setFilter(f);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="space-y-2">
-          <SectionLabel n={1}>Inbox</SectionLabel>
-          <h1 className="text-3xl font-semibold tracking-tight">Everything that needs you</h1>
-          <p className="max-w-prose text-sm text-muted">
-            One place to triage — change requests to approve, conflicts and suggestions to resolve, gaps to fill,
-            and knowledge nobody reads. Search, filter, sort, then work through them.
-          </p>
-        </div>
-        <div className="inline-flex rounded-lg border border-line bg-surface p-0.5 text-sm">
-          {(["list", "focus"] as const).map((v) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className={`rounded-md px-3 py-1 capitalize ${view === v ? "bg-brand text-white" : "text-muted hover:text-ink"}`}
-            >
-              {v}
-            </button>
-          ))}
-        </div>
+      <div className="space-y-2">
+        <SectionLabel n={1}>Inbox</SectionLabel>
+        <h1 className="text-3xl font-semibold tracking-tight">Everything that needs you</h1>
+        <p className="max-w-prose text-sm text-muted">
+          One place to triage — change requests to approve, conflicts and suggestions to resolve, gaps to fill,
+          and knowledge nobody reads. Search, filter, sort, then work through them.
+        </p>
       </div>
 
       {/* Advanced filters + sort */}
@@ -153,24 +134,24 @@ export function ReviewQueue({ items }: { items: QueueItem[] }) {
           <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted">⌕</span>
           <input
             value={query}
-            onChange={(e) => { setQuery(e.target.value); setIdx(0); }}
+            onChange={(e) => setQuery(e.target.value)}
             placeholder="Search title or content…"
             className="w-full rounded-lg border border-line bg-surface py-1.5 pl-7 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20"
           />
         </div>
-        <Select label="Owner" value={owner} onChange={(v) => { setOwner(v); setIdx(0); }}>
+        <Select label="Owner" value={owner} onChange={setOwner}>
           <option value="all">Any owner</option>
           {owners.map((o) => (
             <option key={o} value={o}>{o}</option>
           ))}
         </Select>
-        <Select label="Importance" value={importance} onChange={(v) => { setImportance(v as Importance | "all"); setIdx(0); }}>
+        <Select label="Importance" value={importance} onChange={(v) => setImportance(v as Importance | "all")}>
           <option value="all">Any importance</option>
           <option value="high">High</option>
           <option value="medium">Medium</option>
           <option value="low">Low</option>
         </Select>
-        <Select label="Date" value={range} onChange={(v) => { setRange(v as DateRange); setIdx(0); }}>
+        <Select label="Date" value={range} onChange={(v) => setRange(v as DateRange)}>
           <option value="all">Any time</option>
           <option value="24h">Last 24h</option>
           <option value="7d">Last 7 days</option>
@@ -213,19 +194,12 @@ export function ReviewQueue({ items }: { items: QueueItem[] }) {
         <div className="rounded-xl border border-line bg-surface p-8 text-center text-sm text-muted shadow-card">
           {items.length === 0 ? "Nothing here — queue’s clear. 🎉" : "No items match these filters."}
         </div>
-      ) : view === "list" ? (
+      ) : (
         <div className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface shadow-card">
           {filtered.map((it, i) => (
             <Row key={`${it.kind}-${i}`} item={it} />
           ))}
         </div>
-      ) : (
-        <Focus
-          items={filtered}
-          idx={Math.min(idx, filtered.length - 1)}
-          onPrev={() => setIdx((n) => Math.max(0, n - 1))}
-          onNext={() => setIdx((n) => Math.min(filtered.length - 1, n + 1))}
-        />
       )}
     </div>
   );
@@ -296,59 +270,6 @@ function Row({ item }: { item: QueueItem }) {
         {item.action} →
       </span>
     </Link>
-  );
-}
-
-function Focus({
-  items,
-  idx,
-  onPrev,
-  onNext,
-}: {
-  items: QueueItem[];
-  idx: number;
-  onPrev: () => void;
-  onNext: () => void;
-}) {
-  const it = items[idx];
-  if (!it) return null;
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between text-sm text-muted">
-        <span className="font-mono text-xs">
-          {idx + 1} / {items.length}
-        </span>
-        <div className="flex gap-2">
-          <button onClick={onPrev} disabled={idx === 0} className="rounded-lg border border-line px-3 py-1.5 disabled:opacity-40">
-            ← Prev
-          </button>
-          <button onClick={onNext} disabled={idx === items.length - 1} className="rounded-lg border border-line px-3 py-1.5 disabled:opacity-40">
-            Next →
-          </button>
-        </div>
-      </div>
-      <div className="rounded-2xl border border-line bg-surface p-6 shadow-card">
-        <div className="flex items-center justify-between">
-          <KindBadge kind={it.kind} />
-          {it.importance && <ImportanceBadge importance={it.importance} />}
-        </div>
-        <h2 className="mt-2 text-xl font-semibold">{it.title}</h2>
-        <p className="mt-1 text-sm text-muted">{it.meta}</p>
-        {(it.owner || it.date) && (
-          <p className="mt-1 text-xs text-muted">
-            {it.owner ? `Opened by ${it.owner}` : ""}
-            {it.owner && it.date ? " · " : ""}
-            {it.date ? relativeTime(it.date) : ""}
-          </p>
-        )}
-        <Link
-          href={it.href}
-          className="mt-4 inline-block rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
-        >
-          {it.action} →
-        </Link>
-      </div>
-    </div>
   );
 }
 

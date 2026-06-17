@@ -18,7 +18,7 @@ const PAGES: Array<[string, string, string]> = [
   ["Change Requests", "/changes", "Review and approve proposed edits."],
   ["Governance", "/governance", "Freshness/TTL and auto-opened review tickets."],
   ["Distribution", "/distribution", "Signed, per-agent bundles your agents pull."],
-  ["Editor", "/edit/policies/refunds.md", "Draft a change; propose it for review."],
+  ["Library", "/edit/policies/refunds.md", "Every file with its layers — who wrote it, usage, open requests. Draft a change and propose it."],
   ["Workspace", "/setup", "Connect your typed sources (context / skills / memory)."],
 ];
 

@@ -142,7 +142,7 @@ export default async function Dashboard() {
         <p className="px-1 text-xs text-muted">
           Provenance bar: <span className="text-emerald-600 dark:text-emerald-400">human</span> ·{" "}
           <span className="text-brand">AI-approved</span> ·{" "}
-          <span className="text-amber-600 dark:text-amber-400">unverified</span>. Click a file to open it in the editor.
+          <span className="text-amber-600 dark:text-amber-400">unverified</span>. Click a file to open it in the Library.
         </p>
       </section>
     </div>

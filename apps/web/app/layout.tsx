@@ -50,7 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <span className="inline-flex items-center">Inbox<InboxBadge /></span>
                 </NavLink>
                 <NavLink href="/">Dashboard</NavLink>
-                <NavLink href="/edit/policies/refunds.md">Editor</NavLink>
+                <NavLink href="/edit/policies/refunds.md">Library</NavLink>
                 <NavLink href="/distribution">Publish</NavLink>
                 <NavLink href="/setup">Workspace</NavLink>
               </nav>

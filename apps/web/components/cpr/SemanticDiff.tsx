@@ -10,7 +10,7 @@ import { Hint } from "@/components/ui/Tooltip";
  * wiki. No line numbers, no red/green gutters; a calm left rail and inline
  * emphasis carry the meaning. Hovering any block reveals its attribution.
  *
- * This is the *reviewing* surface (unlike the Editor, which is for authoring):
+ * This is the *reviewing* surface (unlike the Library, which is for authoring):
  * select any text in a proposed change to leave structured review feedback —
  * Clarify, Verify, Out of scope, Nice approach, etc. The notes collect into a
  * thread per block and are sent back to the author when you Request changes.
