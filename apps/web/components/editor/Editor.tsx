@@ -453,27 +453,83 @@ function Block({
             {who}
           </span>
         )}
-        <div className="flex items-center gap-0.5 rounded-md border border-line bg-surface p-0.5 shadow-sm">
-          <RowBtn title="Add line below" onClick={() => onAdd(idx)}>＋</RowBtn>
-          {!isHeading && <RowBtn title="Edit this line" onClick={() => onEdit(idx, block.text)}>✎</RowBtn>}
-          {!isHeading && <RowBtn title="Leave a note" onClick={() => onNote(idx, block.text)}>💬</RowBtn>}
-          {!isHeading && <RowBtn title="Delete this line" onClick={() => onDelete(idx, block.text)}>🗑️</RowBtn>}
+        <div className="flex items-center gap-0.5 rounded-lg border border-line bg-surface p-1 shadow-sm">
+          <RowBtn title="Add line below" onClick={() => onAdd(idx)}><Icon name="add" /></RowBtn>
+          {!isHeading && <RowBtn title="Edit this line" onClick={() => onEdit(idx, block.text)}><Icon name="edit" /></RowBtn>}
+          {!isHeading && <RowBtn title="Leave a note" onClick={() => onNote(idx, block.text)}><Icon name="note" /></RowBtn>}
+          {!isHeading && <RowBtn title="Delete this line" danger onClick={() => onDelete(idx, block.text)}><Icon name="trash" /></RowBtn>}
         </div>
       </div>
     </div>
   );
 }
 
-function RowBtn({ title, onClick, children }: { title: string; onClick: () => void; children: React.ReactNode }) {
+function RowBtn({
+  title,
+  onClick,
+  danger,
+  children,
+}: {
+  title: string;
+  onClick: () => void;
+  danger?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <button
       title={title}
+      aria-label={title}
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
-      className="rounded px-1.5 py-0.5 text-xs leading-none hover:bg-hover"
+      className={`flex h-7 w-7 items-center justify-center rounded-md text-muted transition hover:bg-hover ${
+        danger ? "hover:text-rose-600 dark:hover:text-rose-400" : "hover:text-ink"
+      }`}
     >
       {children}
     </button>
+  );
+}
+
+/** Clean, consistent stroke icons for the per-line action bar. */
+function Icon({ name }: { name: "add" | "edit" | "note" | "trash" }) {
+  const p = {
+    width: 16,
+    height: 16,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+  if (name === "add")
+    return (
+      <svg {...p}>
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+    );
+  if (name === "edit")
+    return (
+      <svg {...p}>
+        <path d="M12 20h9" />
+        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+      </svg>
+    );
+  if (name === "note")
+    return (
+      <svg {...p}>
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
+    );
+  return (
+    <svg {...p}>
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
+    </svg>
   );
 }
 
