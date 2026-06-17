@@ -434,29 +434,24 @@ function Block({
   return (
     <div
       id={`blk-${idx}`}
-      className={`group relative grid border-l-2 py-2 pl-3 leading-[1.7] transition-colors hover:bg-hover/40 ${meta?.rail ?? "border-transparent"} ${
-        showBlame ? "grid-cols-1 gap-1 pr-2 md:grid-cols-[1fr_13rem] md:gap-4" : "grid-cols-1 pr-12"
+      className={`group relative grid border-l-2 py-2 pr-12 leading-[1.7] transition-colors hover:bg-hover/40 ${meta?.rail ?? "border-transparent"} ${
+        showBlame ? "grid-cols-[10.5rem_minmax(0,1fr)] gap-3 pl-2.5" : "grid-cols-1 pl-3"
       }`}
     >
-      {/* The written content — selectable for partial edits. */}
-      <div data-bi={idx} className="min-w-0">{content}</div>
-
-      {/* Blame gutter — author + open marker per line; fades on hover for actions. */}
+      {/* Blame gutter — author right next to the colour rail (git-blame style). */}
       {showBlame && (
-        <aside className="flex items-center gap-2 text-[11px] text-muted transition-opacity group-hover:opacity-0 md:justify-end md:text-right">
-          {openReqs > 0 && (
-            <span className="rounded-full px-1.5 py-0.5 font-medium" style={{ background: "rgba(9,105,218,0.12)", color: "#0969da" }}>
-              {openReqs} open
-            </span>
-          )}
-          <span className={`truncate ${conf === "agent_unverified" ? "text-amber-600 dark:text-amber-400" : ""}`}>
+        <aside className="min-w-0 pt-0.5 text-[11px] leading-snug text-muted" title={who ?? "unattributed"}>
+          <span className={`block truncate ${conf === "agent_unverified" ? "text-amber-600 dark:text-amber-400" : ""}`}>
             {who ?? "unattributed"}
           </span>
         </aside>
       )}
 
-      {/* Open marker (only when not in blame mode — blame shows it inline). */}
-      {!showBlame && openReqs > 0 && (
+      {/* The written content — selectable for partial edits. */}
+      <div data-bi={idx} className="min-w-0">{content}</div>
+
+      {/* Open-requests marker (fades on hover so the action bar can show). */}
+      {openReqs > 0 && (
         <Link
           href="/inbox"
           title={`${openReqs} open request${openReqs === 1 ? "" : "s"} on this line`}

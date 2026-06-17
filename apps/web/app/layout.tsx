@@ -60,9 +60,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </div>
           </header>
-          <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
+          <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
           <footer className="border-t border-line">
-            <div className="mx-auto max-w-5xl px-6 py-5 text-xs text-muted">
+            <div className="mx-auto max-w-6xl px-6 py-5 text-xs text-muted">
               <span className="font-mono uppercase tracking-[0.15em]">bravo · Brain Vault</span>
             </div>
           </footer>
