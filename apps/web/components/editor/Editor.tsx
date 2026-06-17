@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Attribution, BlockInsight, Confidence, DocumentView } from "@context-studio/types";
-import { autosaveDoc, exportUrls, proposeChange } from "@/lib/api";
+import { autosaveDoc, proposeChange } from "@/lib/api";
 import { authHeaders, getSession } from "@/lib/auth";
 import { parseBlocks, blockKey, type ClientBlock } from "@/lib/blocks";
 import { relativeTime } from "@/components/cpr/ui";
@@ -78,7 +78,7 @@ export function Editor({
   const router = useRouter();
   const [content, setContent] = useState(doc.content);
   const [mode, setMode] = useState<Mode>("edit");
-  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [, setSaveState] = useState<SaveState>("idle");
   const [draftPrId, setDraftPrId] = useState<string | undefined>(doc.draftPrId);
   const [showPropose, setShowPropose] = useState(false);
   const [showBlame, setShowBlame] = useState(false);
@@ -90,7 +90,6 @@ export function Editor({
 
   const docRef = useRef<HTMLDivElement | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dirty = content !== doc.content;
   const blocks = parseBlocks(content);
 
   const attribByKey = useMemo(
@@ -181,79 +180,71 @@ export function Editor({
   const blockAdd = (blockIdx: number) => { setComposing({ blockIdx, quote: "", mode: "add" }); setDraftText(""); setSel(null); };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="flex flex-wrap items-center gap-x-2 font-mono text-sm text-muted">
-            {currentPath}
-            {typeof fileReads === "number" && (
-              <span className="rounded-full bg-surface2 px-2 py-0.5 text-[11px] text-muted">
-                {fileReads.toLocaleString()} reads · 30d
-              </span>
-            )}
-          </h1>
-          <p className="text-xs text-muted">
-            The left rail shows who wrote each line. Hover a line to add, edit, note, or delete — or select text
-            for a precise edit. Toggle “Authors” to annotate every line, git-blame style. Autosaves until you propose.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <SaveBadge state={saveState} dirty={dirty} />
-          <ExportMenu />
-          <button
-            disabled={!draftPrId}
-            onClick={() => setShowPropose(true)}
-            className="rounded-lg bg-brand px-3 py-1.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-40"
-          >
-            Propose change
-          </button>
+    <div className="flex h-[calc(100dvh-11rem)] min-h-[26rem] flex-col gap-3">
+      {/* Toolbar */}
+      <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-line pb-3">
+        <h1 className="truncate font-mono text-sm font-medium text-ink">{currentPath}</h1>
+        {typeof fileReads === "number" && (
+          <span className="text-xs text-muted">{fileReads.toLocaleString()} reads · 30d</span>
+        )}
+        <div className="ml-auto flex items-center gap-2">
+          <div className="inline-flex rounded-lg border border-line bg-surface p-0.5 text-sm">
+            {(["edit", "source"] as Mode[]).map((m) => (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                className={`rounded-md px-3 py-1 capitalize ${mode === m ? "bg-brand text-white" : "text-muted hover:text-ink"}`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+          {mode === "edit" && (
+            <button
+              onClick={() => setShowBlame((b) => !b)}
+              aria-pressed={showBlame}
+              title="Annotate every line with its author (git-blame style)"
+              className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
+                showBlame ? "border-brand bg-brand/10 text-ink" : "border-line text-muted hover:bg-hover hover:text-ink"
+              }`}
+            >
+              Authors
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[13rem_1fr]">
-        <div className="space-y-5 lg:sticky lg:top-6 lg:self-start">
+      {/* IDE panes — each column scrolls on its own; the page itself doesn't. */}
+      <div className="flex min-h-0 flex-1 gap-4">
+        {/* Files + outline */}
+        <aside className="hidden w-48 shrink-0 overflow-y-auto pr-1 md:block">
           <FileBrowser files={files} current={currentPath} />
-          {mode === "edit" && <Outline blocks={blocks} />}
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="inline-flex rounded-lg border border-line bg-surface p-0.5 text-sm">
-              {(["edit", "source"] as Mode[]).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setMode(m)}
-                  className={`rounded-md px-3 py-1 capitalize ${mode === m ? "bg-brand text-white" : "text-muted hover:text-ink"}`}
-                >
-                  {m}
-                </button>
-              ))}
+          {mode === "edit" && (
+            <div className="mt-5">
+              <Outline blocks={blocks} />
             </div>
-            {mode === "edit" && (
-              <button
-                onClick={() => setShowBlame((b) => !b)}
-                aria-pressed={showBlame}
-                title="Annotate every line with its author (git-blame style)"
-                className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
-                  showBlame ? "border-brand bg-brand/10 text-ink" : "border-line text-muted hover:bg-hover hover:text-ink"
-                }`}
-              >
-                Authors
-              </button>
-            )}
-          </div>
+          )}
+        </aside>
 
+        {/* Document */}
+        <div
+          ref={docRef}
+          onMouseUp={onMouseUp}
+          className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-line bg-surface"
+        >
           {mode === "source" ? (
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               spellCheck={false}
-              className="h-[28rem] w-full resize-y rounded-xl border border-line bg-surface p-4 font-mono text-sm leading-relaxed text-ink shadow-card focus:outline-none focus:ring-2 focus:ring-brand/20"
+              className="h-full w-full resize-none bg-transparent p-4 font-mono text-sm leading-relaxed text-ink focus:outline-none"
             />
           ) : (
             <>
-              <Legend />
-              <div ref={docRef} onMouseUp={onMouseUp} className="overflow-hidden rounded-2xl border border-line bg-surface px-3 py-3 shadow-card sm:px-5">
+              <div className="shrink-0 border-b border-line px-4 py-2">
+                <Legend />
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
                 <article className="text-[15px]">
                   {blocks.map((b, i) => (
                     <Block
@@ -272,10 +263,19 @@ export function Editor({
                   ))}
                 </article>
               </div>
-              <Annotations annos={annos} onRemove={(id) => setAnnos((x) => x.filter((y) => y.id !== id))} onPropose={openPropose} />
             </>
           )}
         </div>
+
+        {/* Annotations / proposed changes */}
+        <aside className="hidden w-72 shrink-0 flex-col overflow-hidden lg:flex">
+          <AnnotationsPanel
+            annos={annos}
+            draftPrId={draftPrId}
+            onRemove={(id) => setAnnos((x) => x.filter((y) => y.id !== id))}
+            onPropose={openPropose}
+          />
+        </aside>
       </div>
 
       {/* Floating select toolbar — same icon buttons as the per-line hover bar. */}
@@ -376,13 +376,6 @@ function Legend() {
       <span className="flex items-center gap-1.5"><span className="h-3 w-1 rounded bg-amber-500" /> AI · unverified</span>
     </div>
   );
-}
-
-function SaveBadge({ state, dirty }: { state: SaveState; dirty: boolean }) {
-  if (state === "saving") return <span className="text-xs text-muted">Saving…</span>;
-  if (state === "error") return <span className="text-xs text-rose-600">Save failed</span>;
-  if (state === "saved") return <span className="text-xs text-emerald-600">Draft saved</span>;
-  return <span className="text-xs text-muted">{dirty ? "Unsaved" : "Up to date"}</span>;
 }
 
 function Block({
@@ -589,49 +582,54 @@ function annotate(text: string, annos: Anno[]): React.ReactNode {
   return nodes;
 }
 
-function Annotations({ annos, onRemove, onPropose }: { annos: Anno[]; onRemove: (id: string) => void; onPropose: () => void }) {
-  if (annos.length === 0) {
-    return (
-      <p className="rounded-xl border border-dashed border-line p-3 text-xs text-muted">
-        Select text to edit, delete, or leave a note.
-      </p>
-    );
-  }
+/** Right IDE column: the proposed changes, with Propose at the top. */
+function AnnotationsPanel({
+  annos,
+  draftPrId,
+  onRemove,
+  onPropose,
+}: {
+  annos: Anno[];
+  draftPrId?: string;
+  onRemove: (id: string) => void;
+  onPropose: () => void;
+}) {
+  const canPropose = annos.length > 0 || !!draftPrId;
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">Pending edits · {annos.length}</div>
-        <button
-          onClick={onPropose}
-          className="rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90"
-        >
-          Create change request →
-        </button>
+    <div className="flex h-full flex-col">
+      <div className="mb-2 flex shrink-0 items-center justify-between">
+        <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">Annotations</span>
+        <span className="rounded-full bg-surface2 px-1.5 py-0.5 text-[11px] text-muted">{annos.length}</span>
       </div>
-      {annos.map((a) => (
-        <div key={a.id} className="rounded-xl border border-line bg-surface p-3 shadow-card">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted">
-              <span className="h-2 w-2 rounded-full" style={{ background: a.color }} />
-              {a.emoji} {a.label}
-            </span>
-            <button onClick={() => onRemove(a.id)} className="text-xs text-muted hover:text-ink" aria-label="Remove annotation">✕</button>
-          </div>
-          <div className="mt-1 truncate text-xs italic text-muted">“{a.quote}”</div>
-          {a.note && <div className="mt-1 text-sm">{a.note}</div>}
-          {a.replacement && <div className="mt-1 text-sm">→ <span className="rounded bg-amber-500/15 px-1">{a.replacement}</span></div>}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ExportMenu() {
-  return (
-    <div className="flex items-center gap-1 rounded-lg border border-line bg-surface px-1 py-1 text-xs">
-      <span className="px-1 text-muted">Export</span>
-      <a href={exportUrls.llmsTxt} target="_blank" className="rounded px-1.5 py-0.5 hover:bg-surface2">llms.txt</a>
-      <a href={exportUrls.fcontext} target="_blank" className="rounded px-1.5 py-0.5 hover:bg-surface2">.fcontext</a>
+      <button
+        onClick={onPropose}
+        disabled={!canPropose}
+        className="mb-3 shrink-0 rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-40"
+      >
+        Propose change →
+      </button>
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+        {annos.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-line p-3 text-xs text-muted">
+            Hover a line or select text to edit, note, or delete. Proposed changes collect here, then propose them as one change request.
+          </p>
+        ) : (
+          annos.map((a) => (
+            <div key={a.id} className="rounded-xl border border-line bg-surface p-3">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted">
+                  <span className="h-2 w-2 rounded-full" style={{ background: a.color }} />
+                  {a.label}
+                </span>
+                <button onClick={() => onRemove(a.id)} className="text-xs text-muted hover:text-ink" aria-label="Remove annotation">✕</button>
+              </div>
+              <div className="mt-1 truncate text-xs italic text-muted">“{a.quote}”</div>
+              {a.note && <div className="mt-1 text-sm">{a.note}</div>}
+              {a.replacement && <div className="mt-1 text-sm">→ <span className="rounded bg-amber-500/15 px-1">{a.replacement}</span></div>}
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }

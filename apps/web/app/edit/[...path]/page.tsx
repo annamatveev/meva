@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getDocumentView, getInsights, getWorkspace } from "@/lib/api";
 import { Editor } from "@/components/editor/Editor";
 import { DEMO_DOC_PATHS } from "@/lib/demo";
@@ -46,14 +45,7 @@ export default async function EditPage({
     );
   }
 
-  return (
-    <div className="space-y-4">
-      <Link href="/" className="text-sm text-muted hover:text-ink">
-        ← Dashboard
-      </Link>
-      <Editor doc={doc} files={files} currentPath={documentPath} fileReads={fileReads} />
-    </div>
-  );
+  return <Editor doc={doc} files={files} currentPath={documentPath} fileReads={fileReads} />;
 }
 
 function ErrorState({ title, body }: { title: string; body: string }) {
